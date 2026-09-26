@@ -15,7 +15,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from mcp_sorter.artifacts import write_once
+from mcp_sorter.artifacts import replace_text, write_once
 from mcp_sorter.catalog import Catalog
 from mcp_sorter.models import Filters
 from mcp_sorter.ranking import Ranking, RankRequest, query_expression, rank
@@ -269,6 +269,16 @@ def report_path(directory: Path, identifier: str) -> Path:
 def save_report(directory: Path, report: EvaluationReport) -> None:
     path = report_path(directory, report.id)
     write_once(path, report.model_dump_json(indent=2))
+    render_saved_report(directory, report.id)
+
+
+def render_saved_report(directory: Path, identifier: str) -> None:
+    """Rebuild the HTML view from validated, immutable JSON without running a ranker."""
+    path = report_path(directory, identifier)
+    report = EvaluationReport.model_validate_json(path.read_text("utf-8"))
+    if report.id != identifier:
+        raise ValueError("Evaluation report ID does not match its filename")
+    gate = gate_slice(report.cases, report.cases)
     rows = "".join(
         f"<tr><td>{html.escape(c.id)}</td><td>{html.escape(', '.join(c.result_ids))}</td>"
         f"<td>{c.metrics['ndcg_at_5']}</td><td>{c.constraint_violations}</td>"
@@ -276,15 +286,17 @@ def save_report(directory: Path, report: EvaluationReport) -> None:
         f"<td>{html.escape(str(c.model_metadata.get('failure') or 'none'))}</td></tr>"
         for c in report.cases
     )
-    path.with_suffix(".html").write_text(
+    replace_text(
+        path.with_suffix(".html"),
         "<!doctype html><html lang='en'><meta charset='utf-8'><title>Evaluation report</title>"
         f"<h1>Evaluation: {html.escape(report.profile)}</h1><p>{html.escape(report.notice)}</p>"
         f"<p>{html.escape(report.claim_check_scope)}</p>"
+        f"<p>Case integrity: {html.escape(', '.join(gate['failures']) or 'passed')}. "
+        "NDCG regression requires comparison with a baseline.</p>"
         "<table><thead><tr><th>Case</th><th>Results</th><th>NDCG@5</th>"
         "<th>Constraints</th><th>Evidence errors</th><th>Unsupported claims</th>"
         "<th>Fallback</th></tr></thead>"
         f"<tbody>{rows}</tbody></table></html>",
-        encoding="utf-8",
     )
 
 

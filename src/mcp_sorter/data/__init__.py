@@ -1,0 +1,1 @@
+"""Versioned, simulated showcase inputs."""

@@ -17,6 +17,7 @@ from mcp_sorter.models import Filters
 from mcp_sorter.ranking import Profile, RankRequest
 from mcp_sorter.ranking import compare as compare_servers
 from mcp_sorter.runtime import Runtime
+from mcp_sorter.selections import catalog_diff
 from mcp_sorter.settings import Settings
 from mcp_sorter.sources import fetch_registry
 
@@ -91,6 +92,34 @@ def sync_catalog() -> None:
         typer.echo(snapshot)
     except ValueError as exc:
         raise typer.BadParameter(str(exc)) from exc
+    finally:
+        runtime.close()
+
+
+@app.command()
+def versions() -> None:
+    """List retained catalog versions and the active snapshot."""
+    runtime = Runtime(Settings())
+    try:
+        typer.echo(
+            json.dumps(
+                {
+                    "active_catalog": runtime.catalog.active(),
+                    "snapshots": runtime.catalog.snapshots(),
+                },
+                indent=2,
+            )
+        )
+    finally:
+        runtime.close()
+
+
+@catalog_app.command("diff")
+def diff_catalogs(before: str, after: str) -> None:
+    """Show added, removed, changed, and deprecated server IDs."""
+    runtime = Runtime(Settings())
+    try:
+        typer.echo(json.dumps(catalog_diff(runtime, before, after), indent=2))
     finally:
         runtime.close()
 

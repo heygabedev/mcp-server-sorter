@@ -7,7 +7,7 @@ from opentelemetry.sdk.trace import TracerProvider
 from prometheus_client import CollectorRegistry, Counter, Histogram
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
-from starlette.responses import Response
+from starlette.responses import JSONResponse, Response
 
 
 class Telemetry:
@@ -25,6 +25,14 @@ class Telemetry:
 
 class RequestTelemetry(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        if request.method not in ("GET", "HEAD", "OPTIONS"):
+            origin = request.headers.get("origin")
+            if (origin and origin != str(request.base_url).rstrip("/")) or request.headers.get(
+                "sec-fetch-site"
+            ) == "cross-site":
+                return JSONResponse(
+                    {"detail": "Cross-origin writes are not allowed"}, status_code=403
+                )
         telemetry: Telemetry = request.app.state.telemetry
         started = perf_counter()
         request_id = uuid4().hex

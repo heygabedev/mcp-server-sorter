@@ -11,6 +11,15 @@ from mcp_sorter.gateways import rank_with_profile
 from mcp_sorter.models import ServerRecord
 from mcp_sorter.ranking import Profile, Ranking, RankRequest, compare, rank
 from mcp_sorter.runtime import Runtime
+from mcp_sorter.selections import (
+    Selection,
+    SelectionExport,
+    catalog_diff,
+    export_selection,
+    import_selection,
+    list_selections,
+    save_selection,
+)
 from mcp_sorter.settings import Settings
 from mcp_sorter.telemetry import RequestTelemetry, Telemetry
 
@@ -106,6 +115,45 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         except (ValueError, FileNotFoundError) as exc:
             raise HTTPException(404, "Evaluation report not found") from exc
 
+    @application.get("/api/v1/collections", response_model=list[Selection])
+    def collections() -> list[Selection]:
+        return list_selections(application.state.runtime)
+
+    @application.post("/api/v1/collections", response_model=Selection, status_code=201)
+    def create_collection(request: CollectionRequest) -> Selection:
+        try:
+            return save_selection(
+                application.state.runtime, request.name, request.ids, request.snapshot
+            )
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+
+    @application.get("/api/v1/collections/{identifier}/export", response_model=SelectionExport)
+    def export_collection(identifier: str) -> SelectionExport:
+        try:
+            return export_selection(application.state.runtime, identifier)
+        except ValueError as exc:
+            raise HTTPException(404, str(exc)) from exc
+
+    @application.post("/api/v1/collections/import", response_model=Selection, status_code=201)
+    def import_collection(bundle: SelectionExport) -> Selection:
+        try:
+            return import_selection(application.state.runtime, bundle)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+
+    @application.get("/api/v1/versions")
+    def versions() -> dict[str, object]:
+        catalog = application.state.runtime.catalog
+        return {"active_catalog": catalog.active(), "snapshots": catalog.snapshots()}
+
+    @application.get("/api/v1/versions/diff")
+    def version_diff(before: str, after: str) -> dict[str, list[str]]:
+        try:
+            return catalog_diff(application.state.runtime, before, after)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+
     return application
 
 
@@ -116,3 +164,9 @@ class CompareRequest(BaseModel):
 
 class EvaluationRequest(BaseModel):
     profile: Profile = "baseline"
+
+
+class CollectionRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+    ids: list[str] = Field(min_length=1, max_length=50)
+    snapshot: str | None = None

@@ -6,6 +6,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from pydantic import BaseModel, Field
 
 from mcp_sorter import __version__
+from mcp_sorter.evaluation import EvaluationReport, evaluate, report_path, save_report
 from mcp_sorter.models import ServerRecord
 from mcp_sorter.ranking import Ranking, RankRequest, compare, rank
 from mcp_sorter.runtime import Runtime
@@ -69,6 +70,32 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             return compare(application.state.runtime.catalog, request.ids, request.snapshot)
         except ValueError as exc:
             raise HTTPException(422, str(exc)) from exc
+
+    @application.post("/api/v1/evaluations", response_model=EvaluationReport)
+    def evaluations() -> EvaluationReport:
+        report = evaluate(application.state.runtime.catalog)
+        save_report(config.data_dir, report)
+        return report
+
+    @application.get("/api/v1/evaluations", response_model=list[EvaluationReport])
+    def evaluation_history() -> list[EvaluationReport]:
+        return [
+            EvaluationReport.model_validate_json(path.read_text("utf-8"))
+            for path in sorted(
+                (config.data_dir / "reports").glob("*.json"),
+                key=lambda p: p.stat().st_mtime,
+                reverse=True,
+            )[:50]
+        ]
+
+    @application.get("/api/v1/evaluations/{identifier}", response_model=EvaluationReport)
+    def evaluation_report(identifier: str) -> EvaluationReport:
+        try:
+            return EvaluationReport.model_validate_json(
+                report_path(config.data_dir, identifier).read_text("utf-8")
+            )
+        except (ValueError, FileNotFoundError) as exc:
+            raise HTTPException(404, "Evaluation report not found") from exc
 
     return application
 

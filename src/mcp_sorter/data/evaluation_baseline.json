@@ -1,0 +1,18 @@
+{
+  "dataset_sha256": "07c2314b4595935ddf63d88b5649cdd912442c5731881eed419bd66d6743ded8",
+  "snapshot": "943ade094ce587eafb0cb2ba49a97e52934f23eab30e586593428a2af4592a97",
+  "policy_version": "bm25-evidence-v1",
+  "metrics": {
+    "ndcg_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "reciprocal_rank": 1.0,
+    "constraint_violations": 0.0,
+    "invalid_evidence_references": 0.0,
+    "abstention_accuracy": 1.0,
+    "expected_top_accuracy": 1.0,
+    "fallback_rate": 0.0,
+    "cost_usd": 0.0,
+    "unsupported_claim_rate": null
+  },
+  "notice": "Fixture regression results. Live model quality is unmeasured."
+}

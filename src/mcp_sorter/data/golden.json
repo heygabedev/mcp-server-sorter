@@ -1,0 +1,1719 @@
+{
+  "schema_version": 1,
+  "version": "golden-demo-v1",
+  "kind": "synthetic-regression",
+  "notice": "Mock ground truth for workflow testing; no live model quality claims.",
+  "catalog_source_sha256": "c813e8fc0575d1ef3963c0db99fe33c16d5dc07fd215f30a287a0eded1be228d",
+  "cases": [
+    {
+      "id": "github.name",
+      "intent_id": "github",
+      "split": "development",
+      "query": "GitHub",
+      "filters": {
+        "include_deprecated": false
+      },
+      "relevance": {
+        "demo/github": 3
+      },
+      "expected_top": [
+        "demo/github"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.github.capabilities"
+      ],
+      "rationale": "The GitHub fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "github.capability",
+      "intent_id": "github",
+      "split": "development",
+      "query": "repositories pull requests",
+      "filters": {
+        "include_deprecated": false,
+        "category": "development",
+        "auth": "oauth"
+      },
+      "relevance": {
+        "demo/github": 3
+      },
+      "expected_top": [
+        "demo/github"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.github.capabilities"
+      ],
+      "rationale": "The GitHub fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "github.unsupported",
+      "intent_id": "github",
+      "split": "development",
+      "query": "unsupportedcapability0xyz",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "This token is absent from every fixture record.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "notion.name",
+      "intent_id": "notion",
+      "split": "development",
+      "query": "Notion",
+      "filters": {
+        "include_deprecated": false
+      },
+      "relevance": {
+        "demo/notion": 3
+      },
+      "expected_top": [
+        "demo/notion"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.notion.capabilities"
+      ],
+      "rationale": "The Notion fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "notion.capability",
+      "intent_id": "notion",
+      "split": "development",
+      "query": "wiki pages notes",
+      "filters": {
+        "include_deprecated": false,
+        "category": "knowledge",
+        "auth": "oauth"
+      },
+      "relevance": {
+        "demo/notion": 3
+      },
+      "expected_top": [
+        "demo/notion"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.notion.capabilities"
+      ],
+      "rationale": "The Notion fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "notion.unsupported",
+      "intent_id": "notion",
+      "split": "development",
+      "query": "unsupportedcapability1xyz",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "This token is absent from every fixture record.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "slack.name",
+      "intent_id": "slack",
+      "split": "development",
+      "query": "Slack",
+      "filters": {
+        "include_deprecated": false
+      },
+      "relevance": {
+        "demo/slack": 3
+      },
+      "expected_top": [
+        "demo/slack"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.slack.capabilities"
+      ],
+      "rationale": "The Slack fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "slack.capability",
+      "intent_id": "slack",
+      "split": "development",
+      "query": "channels messages conversation",
+      "filters": {
+        "include_deprecated": false,
+        "category": "communication",
+        "auth": "oauth"
+      },
+      "relevance": {
+        "demo/slack": 3
+      },
+      "expected_top": [
+        "demo/slack"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.slack.capabilities"
+      ],
+      "rationale": "The Slack fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "slack.unsupported",
+      "intent_id": "slack",
+      "split": "development",
+      "query": "unsupportedcapability2xyz",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "This token is absent from every fixture record.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "figma.name",
+      "intent_id": "figma",
+      "split": "development",
+      "query": "Figma",
+      "filters": {
+        "include_deprecated": false
+      },
+      "relevance": {
+        "demo/figma": 3
+      },
+      "expected_top": [
+        "demo/figma"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.figma.capabilities"
+      ],
+      "rationale": "The Figma fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "figma.capability",
+      "intent_id": "figma",
+      "split": "development",
+      "query": "design frames components",
+      "filters": {
+        "include_deprecated": false,
+        "category": "design",
+        "auth": "oauth"
+      },
+      "relevance": {
+        "demo/figma": 3
+      },
+      "expected_top": [
+        "demo/figma"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.figma.capabilities"
+      ],
+      "rationale": "The Figma fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "figma.unsupported",
+      "intent_id": "figma",
+      "split": "development",
+      "query": "unsupportedcapability3xyz",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "This token is absent from every fixture record.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "linear.name",
+      "intent_id": "linear",
+      "split": "development",
+      "query": "Linear",
+      "filters": {
+        "include_deprecated": false
+      },
+      "relevance": {
+        "demo/linear": 3
+      },
+      "expected_top": [
+        "demo/linear"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.linear.capabilities"
+      ],
+      "rationale": "The Linear fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "linear.capability",
+      "intent_id": "linear",
+      "split": "development",
+      "query": "engineering issues cycles",
+      "filters": {
+        "include_deprecated": false,
+        "category": "development",
+        "auth": "api_key"
+      },
+      "relevance": {
+        "demo/linear": 3
+      },
+      "expected_top": [
+        "demo/linear"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.linear.capabilities"
+      ],
+      "rationale": "The Linear fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "linear.unsupported",
+      "intent_id": "linear",
+      "split": "development",
+      "query": "unsupportedcapability4xyz",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "This token is absent from every fixture record.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "postgres.name",
+      "intent_id": "postgres",
+      "split": "development",
+      "query": "PostgreSQL",
+      "filters": {
+        "include_deprecated": false
+      },
+      "relevance": {
+        "demo/postgres": 3
+      },
+      "expected_top": [
+        "demo/postgres"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.postgres.capabilities"
+      ],
+      "rationale": "The PostgreSQL fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "postgres.capability",
+      "intent_id": "postgres",
+      "split": "development",
+      "query": "postgres relational SQL",
+      "filters": {
+        "include_deprecated": false,
+        "category": "database",
+        "auth": "api_key"
+      },
+      "relevance": {
+        "demo/postgres": 3
+      },
+      "expected_top": [
+        "demo/postgres"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.postgres.capabilities"
+      ],
+      "rationale": "The PostgreSQL fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "postgres.unsupported",
+      "intent_id": "postgres",
+      "split": "development",
+      "query": "unsupportedcapability5xyz",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "This token is absent from every fixture record.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "sqlite.name",
+      "intent_id": "sqlite",
+      "split": "development",
+      "query": "SQLite",
+      "filters": {
+        "include_deprecated": false
+      },
+      "relevance": {
+        "demo/sqlite": 3
+      },
+      "expected_top": [
+        "demo/sqlite"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.sqlite.capabilities"
+      ],
+      "rationale": "The SQLite fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "sqlite.capability",
+      "intent_id": "sqlite",
+      "split": "development",
+      "query": "sqlite embedded database",
+      "filters": {
+        "include_deprecated": false,
+        "category": "database",
+        "auth": "none"
+      },
+      "relevance": {
+        "demo/sqlite": 3
+      },
+      "expected_top": [
+        "demo/sqlite"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.sqlite.capabilities"
+      ],
+      "rationale": "The SQLite fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "sqlite.unsupported",
+      "intent_id": "sqlite",
+      "split": "development",
+      "query": "unsupportedcapability6xyz",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "This token is absent from every fixture record.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "filesystem.name",
+      "intent_id": "filesystem",
+      "split": "development",
+      "query": "Filesystem",
+      "filters": {
+        "include_deprecated": false
+      },
+      "relevance": {
+        "demo/filesystem": 3
+      },
+      "expected_top": [
+        "demo/filesystem"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.filesystem.capabilities"
+      ],
+      "rationale": "The Filesystem fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "filesystem.capability",
+      "intent_id": "filesystem",
+      "split": "development",
+      "query": "files directories disk",
+      "filters": {
+        "include_deprecated": false,
+        "category": "files",
+        "auth": "none"
+      },
+      "relevance": {
+        "demo/filesystem": 3
+      },
+      "expected_top": [
+        "demo/filesystem"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.filesystem.capabilities"
+      ],
+      "rationale": "The Filesystem fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "filesystem.unsupported",
+      "intent_id": "filesystem",
+      "split": "development",
+      "query": "unsupportedcapability7xyz",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "This token is absent from every fixture record.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "browser.name",
+      "intent_id": "browser",
+      "split": "development",
+      "query": "Browser",
+      "filters": {
+        "include_deprecated": false
+      },
+      "relevance": {
+        "demo/browser": 3
+      },
+      "expected_top": [
+        "demo/browser"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.browser.capabilities"
+      ],
+      "rationale": "The Browser fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "browser.capability",
+      "intent_id": "browser",
+      "split": "development",
+      "query": "browser screenshots page",
+      "filters": {
+        "include_deprecated": false,
+        "category": "development",
+        "auth": "none"
+      },
+      "relevance": {
+        "demo/browser": 3
+      },
+      "expected_top": [
+        "demo/browser"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.browser.capabilities"
+      ],
+      "rationale": "The Browser fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "browser.unsupported",
+      "intent_id": "browser",
+      "split": "development",
+      "query": "unsupportedcapability8xyz",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "This token is absent from every fixture record.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "memory.name",
+      "intent_id": "memory",
+      "split": "development",
+      "query": "Memory",
+      "filters": {
+        "include_deprecated": false
+      },
+      "relevance": {
+        "demo/memory": 3
+      },
+      "expected_top": [
+        "demo/memory"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.memory.capabilities"
+      ],
+      "rationale": "The Memory fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "memory.capability",
+      "intent_id": "memory",
+      "split": "development",
+      "query": "memory entities relationships",
+      "filters": {
+        "include_deprecated": false,
+        "category": "knowledge",
+        "auth": "none"
+      },
+      "relevance": {
+        "demo/memory": 3
+      },
+      "expected_top": [
+        "demo/memory"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.memory.capabilities"
+      ],
+      "rationale": "The Memory fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "memory.unsupported",
+      "intent_id": "memory",
+      "split": "development",
+      "query": "unsupportedcapability9xyz",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "This token is absent from every fixture record.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "search.name",
+      "intent_id": "search",
+      "split": "heldout",
+      "query": "Web Search",
+      "filters": {
+        "include_deprecated": false
+      },
+      "relevance": {
+        "demo/search": 3
+      },
+      "expected_top": [
+        "demo/search"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.search.capabilities"
+      ],
+      "rationale": "The Web Search fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "search.capability",
+      "intent_id": "search",
+      "split": "heldout",
+      "query": "search websites discovery",
+      "filters": {
+        "include_deprecated": false,
+        "category": "research",
+        "auth": "api_key"
+      },
+      "relevance": {
+        "demo/search": 3
+      },
+      "expected_top": [
+        "demo/search"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.search.capabilities"
+      ],
+      "rationale": "The Web Search fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "search.unsupported",
+      "intent_id": "search",
+      "split": "heldout",
+      "query": "unsupportedcapability10xyz",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "This token is absent from every fixture record.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "fetch.name",
+      "intent_id": "fetch",
+      "split": "heldout",
+      "query": "Page Fetch",
+      "filters": {
+        "include_deprecated": false
+      },
+      "relevance": {
+        "demo/fetch": 3
+      },
+      "expected_top": [
+        "demo/fetch"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.fetch.capabilities"
+      ],
+      "rationale": "The Page Fetch fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "fetch.capability",
+      "intent_id": "fetch",
+      "split": "heldout",
+      "query": "fetch URLs retrieve",
+      "filters": {
+        "include_deprecated": false,
+        "category": "research",
+        "auth": "none"
+      },
+      "relevance": {
+        "demo/fetch": 3
+      },
+      "expected_top": [
+        "demo/fetch"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.fetch.capabilities"
+      ],
+      "rationale": "The Page Fetch fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "fetch.unsupported",
+      "intent_id": "fetch",
+      "split": "heldout",
+      "query": "unsupportedcapability11xyz",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "This token is absent from every fixture record.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "drive.name",
+      "intent_id": "drive",
+      "split": "heldout",
+      "query": "Google Drive",
+      "filters": {
+        "include_deprecated": false
+      },
+      "relevance": {
+        "demo/drive": 3
+      },
+      "expected_top": [
+        "demo/drive"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.drive.capabilities"
+      ],
+      "rationale": "The Google Drive fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "drive.capability",
+      "intent_id": "drive",
+      "split": "heldout",
+      "query": "drive documents shared",
+      "filters": {
+        "include_deprecated": false,
+        "category": "files",
+        "auth": "oauth"
+      },
+      "relevance": {
+        "demo/drive": 3
+      },
+      "expected_top": [
+        "demo/drive"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.drive.capabilities"
+      ],
+      "rationale": "The Google Drive fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "drive.unsupported",
+      "intent_id": "drive",
+      "split": "heldout",
+      "query": "unsupportedcapability12xyz",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "This token is absent from every fixture record.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "sheets.name",
+      "intent_id": "sheets",
+      "split": "heldout",
+      "query": "Google Sheets",
+      "filters": {
+        "include_deprecated": false
+      },
+      "relevance": {
+        "demo/sheets": 3
+      },
+      "expected_top": [
+        "demo/sheets"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.sheets.capabilities"
+      ],
+      "rationale": "The Google Sheets fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "sheets.capability",
+      "intent_id": "sheets",
+      "split": "heldout",
+      "query": "sheets spreadsheets cells",
+      "filters": {
+        "include_deprecated": false,
+        "category": "data",
+        "auth": "oauth"
+      },
+      "relevance": {
+        "demo/sheets": 3
+      },
+      "expected_top": [
+        "demo/sheets"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.sheets.capabilities"
+      ],
+      "rationale": "The Google Sheets fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "sheets.unsupported",
+      "intent_id": "sheets",
+      "split": "heldout",
+      "query": "unsupportedcapability13xyz",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "This token is absent from every fixture record.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "calendar.name",
+      "intent_id": "calendar",
+      "split": "heldout",
+      "query": "Calendar",
+      "filters": {
+        "include_deprecated": false
+      },
+      "relevance": {
+        "demo/calendar": 3
+      },
+      "expected_top": [
+        "demo/calendar"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.calendar.capabilities"
+      ],
+      "rationale": "The Calendar fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "calendar.capability",
+      "intent_id": "calendar",
+      "split": "heldout",
+      "query": "calendar events availability",
+      "filters": {
+        "include_deprecated": false,
+        "category": "productivity",
+        "auth": "oauth"
+      },
+      "relevance": {
+        "demo/calendar": 3
+      },
+      "expected_top": [
+        "demo/calendar"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.calendar.capabilities"
+      ],
+      "rationale": "The Calendar fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "calendar.unsupported",
+      "intent_id": "calendar",
+      "split": "heldout",
+      "query": "unsupportedcapability14xyz",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "This token is absent from every fixture record.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "mail.name",
+      "intent_id": "mail",
+      "split": "heldout",
+      "query": "Mail",
+      "filters": {
+        "include_deprecated": false
+      },
+      "relevance": {
+        "demo/mail": 3
+      },
+      "expected_top": [
+        "demo/mail"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.mail.capabilities"
+      ],
+      "rationale": "The Mail fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "mail.capability",
+      "intent_id": "mail",
+      "split": "heldout",
+      "query": "mail email inbox",
+      "filters": {
+        "include_deprecated": false,
+        "category": "communication",
+        "auth": "oauth"
+      },
+      "relevance": {
+        "demo/mail": 3
+      },
+      "expected_top": [
+        "demo/mail"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.mail.capabilities"
+      ],
+      "rationale": "The Mail fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "mail.unsupported",
+      "intent_id": "mail",
+      "split": "heldout",
+      "query": "unsupportedcapability15xyz",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "This token is absent from every fixture record.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "jira.name",
+      "intent_id": "jira",
+      "split": "heldout",
+      "query": "Jira",
+      "filters": {
+        "include_deprecated": false
+      },
+      "relevance": {
+        "demo/jira": 3
+      },
+      "expected_top": [
+        "demo/jira"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.jira.capabilities"
+      ],
+      "rationale": "The Jira fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "jira.capability",
+      "intent_id": "jira",
+      "split": "heldout",
+      "query": "jira tickets sprints",
+      "filters": {
+        "include_deprecated": false,
+        "category": "development",
+        "auth": "oauth"
+      },
+      "relevance": {
+        "demo/jira": 3
+      },
+      "expected_top": [
+        "demo/jira"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.jira.capabilities"
+      ],
+      "rationale": "The Jira fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "jira.unsupported",
+      "intent_id": "jira",
+      "split": "heldout",
+      "query": "unsupportedcapability16xyz",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "This token is absent from every fixture record.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "trello.name",
+      "intent_id": "trello",
+      "split": "heldout",
+      "query": "Trello",
+      "filters": {
+        "include_deprecated": false
+      },
+      "relevance": {
+        "demo/trello": 3
+      },
+      "expected_top": [
+        "demo/trello"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.trello.capabilities"
+      ],
+      "rationale": "The Trello fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "trello.capability",
+      "intent_id": "trello",
+      "split": "heldout",
+      "query": "trello boards cards",
+      "filters": {
+        "include_deprecated": false,
+        "category": "productivity",
+        "auth": "api_key"
+      },
+      "relevance": {
+        "demo/trello": 3
+      },
+      "expected_top": [
+        "demo/trello"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.trello.capabilities"
+      ],
+      "rationale": "The Trello fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "trello.unsupported",
+      "intent_id": "trello",
+      "split": "heldout",
+      "query": "unsupportedcapability17xyz",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "This token is absent from every fixture record.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "redis.name",
+      "intent_id": "redis",
+      "split": "heldout",
+      "query": "Redis",
+      "filters": {
+        "include_deprecated": false
+      },
+      "relevance": {
+        "demo/redis": 3
+      },
+      "expected_top": [
+        "demo/redis"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.redis.capabilities"
+      ],
+      "rationale": "The Redis fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "redis.capability",
+      "intent_id": "redis",
+      "split": "heldout",
+      "query": "redis cache keys",
+      "filters": {
+        "include_deprecated": false,
+        "category": "database",
+        "auth": "api_key"
+      },
+      "relevance": {
+        "demo/redis": 3
+      },
+      "expected_top": [
+        "demo/redis"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.redis.capabilities"
+      ],
+      "rationale": "The Redis fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "redis.unsupported",
+      "intent_id": "redis",
+      "split": "heldout",
+      "query": "unsupportedcapability18xyz",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "This token is absent from every fixture record.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "elastic.name",
+      "intent_id": "elastic",
+      "split": "heldout",
+      "query": "Elasticsearch",
+      "filters": {
+        "include_deprecated": false
+      },
+      "relevance": {
+        "demo/elastic": 3
+      },
+      "expected_top": [
+        "demo/elastic"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.elastic.capabilities"
+      ],
+      "rationale": "The Elasticsearch fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "elastic.capability",
+      "intent_id": "elastic",
+      "split": "heldout",
+      "query": "elasticsearch indexes aggregation",
+      "filters": {
+        "include_deprecated": false,
+        "category": "database",
+        "auth": "api_key"
+      },
+      "relevance": {
+        "demo/elastic": 3
+      },
+      "expected_top": [
+        "demo/elastic"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.elastic.capabilities"
+      ],
+      "rationale": "The Elasticsearch fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "elastic.unsupported",
+      "intent_id": "elastic",
+      "split": "heldout",
+      "query": "unsupportedcapability19xyz",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "This token is absent from every fixture record.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "sentry.name",
+      "intent_id": "sentry",
+      "split": "heldout",
+      "query": "Sentry",
+      "filters": {
+        "include_deprecated": false
+      },
+      "relevance": {
+        "demo/sentry": 3
+      },
+      "expected_top": [
+        "demo/sentry"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.sentry.capabilities"
+      ],
+      "rationale": "The Sentry fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "sentry.capability",
+      "intent_id": "sentry",
+      "split": "heldout",
+      "query": "sentry exceptions stacktraces",
+      "filters": {
+        "include_deprecated": false,
+        "category": "operations",
+        "auth": "api_key"
+      },
+      "relevance": {
+        "demo/sentry": 3
+      },
+      "expected_top": [
+        "demo/sentry"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.sentry.capabilities"
+      ],
+      "rationale": "The Sentry fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "sentry.unsupported",
+      "intent_id": "sentry",
+      "split": "heldout",
+      "query": "unsupportedcapability20xyz",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "This token is absent from every fixture record.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "grafana.name",
+      "intent_id": "grafana",
+      "split": "heldout",
+      "query": "Grafana",
+      "filters": {
+        "include_deprecated": false
+      },
+      "relevance": {
+        "demo/grafana": 3
+      },
+      "expected_top": [
+        "demo/grafana"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.grafana.capabilities"
+      ],
+      "rationale": "The Grafana fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "grafana.capability",
+      "intent_id": "grafana",
+      "split": "heldout",
+      "query": "grafana dashboards metrics",
+      "filters": {
+        "include_deprecated": false,
+        "category": "operations",
+        "auth": "api_key"
+      },
+      "relevance": {
+        "demo/grafana": 3
+      },
+      "expected_top": [
+        "demo/grafana"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.grafana.capabilities"
+      ],
+      "rationale": "The Grafana fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "grafana.unsupported",
+      "intent_id": "grafana",
+      "split": "heldout",
+      "query": "unsupportedcapability21xyz",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "This token is absent from every fixture record.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "git.name",
+      "intent_id": "git",
+      "split": "heldout",
+      "query": "Git",
+      "filters": {
+        "include_deprecated": false
+      },
+      "relevance": {
+        "demo/git": 3
+      },
+      "expected_top": [
+        "demo/git"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.git.capabilities"
+      ],
+      "rationale": "The Git fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "git.capability",
+      "intent_id": "git",
+      "split": "heldout",
+      "query": "git commits branches",
+      "filters": {
+        "include_deprecated": false,
+        "category": "development",
+        "auth": "none"
+      },
+      "relevance": {
+        "demo/git": 3
+      },
+      "expected_top": [
+        "demo/git"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.git.capabilities"
+      ],
+      "rationale": "The Git fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "git.unsupported",
+      "intent_id": "git",
+      "split": "heldout",
+      "query": "unsupportedcapability22xyz",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "This token is absent from every fixture record.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "docker.name",
+      "intent_id": "docker",
+      "split": "heldout",
+      "query": "Docker",
+      "filters": {
+        "include_deprecated": false
+      },
+      "relevance": {
+        "demo/docker": 3
+      },
+      "expected_top": [
+        "demo/docker"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.docker.capabilities"
+      ],
+      "rationale": "The Docker fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "docker.capability",
+      "intent_id": "docker",
+      "split": "heldout",
+      "query": "docker containers images",
+      "filters": {
+        "include_deprecated": false,
+        "category": "operations",
+        "auth": "none"
+      },
+      "relevance": {
+        "demo/docker": 3
+      },
+      "expected_top": [
+        "demo/docker"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.docker.capabilities"
+      ],
+      "rationale": "The Docker fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "docker.unsupported",
+      "intent_id": "docker",
+      "split": "heldout",
+      "query": "unsupportedcapability23xyz",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "This token is absent from every fixture record.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "kubernetes.name",
+      "intent_id": "kubernetes",
+      "split": "heldout",
+      "query": "Kubernetes",
+      "filters": {
+        "include_deprecated": false
+      },
+      "relevance": {
+        "demo/kubernetes": 3
+      },
+      "expected_top": [
+        "demo/kubernetes"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.kubernetes.capabilities"
+      ],
+      "rationale": "The Kubernetes fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "kubernetes.capability",
+      "intent_id": "kubernetes",
+      "split": "heldout",
+      "query": "kubernetes pods clusters",
+      "filters": {
+        "include_deprecated": false,
+        "category": "operations",
+        "auth": "api_key"
+      },
+      "relevance": {
+        "demo/kubernetes": 3
+      },
+      "expected_top": [
+        "demo/kubernetes"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.kubernetes.capabilities"
+      ],
+      "rationale": "The Kubernetes fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "kubernetes.unsupported",
+      "intent_id": "kubernetes",
+      "split": "heldout",
+      "query": "unsupportedcapability24xyz",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "This token is absent from every fixture record.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "weather.name",
+      "intent_id": "weather",
+      "split": "heldout",
+      "query": "Weather",
+      "filters": {
+        "include_deprecated": false
+      },
+      "relevance": {
+        "demo/weather": 3
+      },
+      "expected_top": [
+        "demo/weather"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.weather.capabilities"
+      ],
+      "rationale": "The Weather fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "weather.capability",
+      "intent_id": "weather",
+      "split": "heldout",
+      "query": "weather forecasts temperature",
+      "filters": {
+        "include_deprecated": false,
+        "category": "data",
+        "auth": "api_key"
+      },
+      "relevance": {
+        "demo/weather": 3
+      },
+      "expected_top": [
+        "demo/weather"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.weather.capabilities"
+      ],
+      "rationale": "The Weather fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "weather.unsupported",
+      "intent_id": "weather",
+      "split": "heldout",
+      "query": "unsupportedcapability25xyz",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "This token is absent from every fixture record.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "maps.name",
+      "intent_id": "maps",
+      "split": "heldout",
+      "query": "Maps",
+      "filters": {
+        "include_deprecated": false
+      },
+      "relevance": {
+        "demo/maps": 3
+      },
+      "expected_top": [
+        "demo/maps"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.maps.capabilities"
+      ],
+      "rationale": "The Maps fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "maps.capability",
+      "intent_id": "maps",
+      "split": "heldout",
+      "query": "maps geocoding directions",
+      "filters": {
+        "include_deprecated": false,
+        "category": "data",
+        "auth": "api_key"
+      },
+      "relevance": {
+        "demo/maps": 3
+      },
+      "expected_top": [
+        "demo/maps"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.maps.capabilities"
+      ],
+      "rationale": "The Maps fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "maps.unsupported",
+      "intent_id": "maps",
+      "split": "heldout",
+      "query": "unsupportedcapability26xyz",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "This token is absent from every fixture record.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "arxiv.name",
+      "intent_id": "arxiv",
+      "split": "heldout",
+      "query": "arXiv",
+      "filters": {
+        "include_deprecated": false
+      },
+      "relevance": {
+        "demo/arxiv": 3
+      },
+      "expected_top": [
+        "demo/arxiv"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.arxiv.capabilities"
+      ],
+      "rationale": "The arXiv fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "arxiv.capability",
+      "intent_id": "arxiv",
+      "split": "heldout",
+      "query": "arxiv papers abstracts",
+      "filters": {
+        "include_deprecated": false,
+        "category": "research",
+        "auth": "none"
+      },
+      "relevance": {
+        "demo/arxiv": 3
+      },
+      "expected_top": [
+        "demo/arxiv"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.arxiv.capabilities"
+      ],
+      "rationale": "The arXiv fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "arxiv.unsupported",
+      "intent_id": "arxiv",
+      "split": "heldout",
+      "query": "unsupportedcapability27xyz",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "This token is absent from every fixture record.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "time.name",
+      "intent_id": "time",
+      "split": "heldout",
+      "query": "Time",
+      "filters": {
+        "include_deprecated": false
+      },
+      "relevance": {
+        "demo/time": 3
+      },
+      "expected_top": [
+        "demo/time"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.time.capabilities"
+      ],
+      "rationale": "The Time fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "time.capability",
+      "intent_id": "time",
+      "split": "heldout",
+      "query": "time timezone clocks",
+      "filters": {
+        "include_deprecated": false,
+        "category": "productivity",
+        "auth": "none"
+      },
+      "relevance": {
+        "demo/time": 3
+      },
+      "expected_top": [
+        "demo/time"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.time.capabilities"
+      ],
+      "rationale": "The Time fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "time.unsupported",
+      "intent_id": "time",
+      "split": "heldout",
+      "query": "unsupportedcapability28xyz",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "This token is absent from every fixture record.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "sqlite-legacy.name",
+      "intent_id": "sqlite-legacy",
+      "split": "heldout",
+      "query": "SQLite Legacy",
+      "filters": {
+        "include_deprecated": true
+      },
+      "relevance": {
+        "demo/sqlite-legacy": 3
+      },
+      "expected_top": [
+        "demo/sqlite-legacy"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.sqlite-legacy.capabilities"
+      ],
+      "rationale": "The SQLite Legacy fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "sqlite-legacy.capability",
+      "intent_id": "sqlite-legacy",
+      "split": "heldout",
+      "query": "sqlite legacy tables",
+      "filters": {
+        "include_deprecated": true,
+        "category": "database",
+        "auth": "none"
+      },
+      "relevance": {
+        "demo/sqlite-legacy": 3
+      },
+      "expected_top": [
+        "demo/sqlite-legacy"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.sqlite-legacy.capabilities"
+      ],
+      "rationale": "The SQLite Legacy fixture explicitly declares this capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "sqlite-legacy.unsupported",
+      "intent_id": "sqlite-legacy",
+      "split": "heldout",
+      "query": "unsupportedcapability29xyz",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "This token is absent from every fixture record.",
+      "review_status": "fixture-authored"
+    }
+  ]
+}

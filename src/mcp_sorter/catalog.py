@@ -9,6 +9,7 @@ from importlib.resources import files
 from pathlib import Path
 from uuid import uuid4
 
+from pydantic import AwareDatetime, TypeAdapter
 from sqlalchemy import Engine, text
 
 from mcp_sorter.models import ServerRecord
@@ -29,6 +30,7 @@ class Catalog:
         return self.directory / f"{snapshot}.sqlite"
 
     def publish(self, records: list[ServerRecord], as_of: str) -> str:
+        as_of = TypeAdapter(AwareDatetime).validate_python(as_of).astimezone(UTC).isoformat()
         if not records:
             raise ValueError("Refusing to publish an empty catalog")
         if len({record.id for record in records}) != len(records):

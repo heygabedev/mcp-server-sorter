@@ -17,7 +17,14 @@ def api_schema(tmp_path):
 
 
 @schema.parametrize()
-@settings(max_examples=12, deadline=None, suppress_health_check=[HealthCheck.too_slow])
+@settings(
+    max_examples=12,
+    deadline=None,
+    derandomize=True,
+    # Nested URI/date-time constraints require filtering in the schema generator.
+    # Generate every requested example without failing on an efficiency warning.
+    suppress_health_check=[HealthCheck.too_slow, HealthCheck.filter_too_much],
+)
 def test_openapi_contract(case):
     # IDs and checksums can be structurally valid while referencing absent local state.
     # Successful domain-specific journeys are covered by API/CLI and browser tests.

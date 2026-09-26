@@ -17,6 +17,7 @@ from mcp_sorter.releases import (
     serve_release,
     stage,
 )
+from mcp_sorter.settings import Settings
 
 
 def wheel(tmp_path, version="0.1.0", revisions=None, interface=True):
@@ -117,3 +118,34 @@ def test_staging_checks_artifact_and_installed_version(runtime, tmp_path, monkey
     with pytest.raises(ValueError, match="version check"):
         stage(runtime.settings, path, digest(path), tmp_path)
     assert not (directory(runtime.settings, digest(path)) / "installed.json").exists()
+
+
+def test_staging_rejects_oversized_mismatched_and_changed_wheels(runtime, tmp_path, monkeypatch):
+    path = wheel(tmp_path)
+    with ZipFile(path) as archive:
+        payload = archive.read("mcp_sorter/release.json")
+    with ZipFile(path, "w") as archive:
+        archive.writestr("mcp_sorter/release.json", payload + b" " * 16_384)
+    with pytest.raises(ValueError, match="Oversized"):
+        stage(runtime.settings, path, digest(path), tmp_path)
+    path = wheel(tmp_path)
+    mismatched = path.with_name("mcp_server_sorter-9.0.0-py3-none-any.whl")
+    mismatched.write_bytes(path.read_bytes())
+    with pytest.raises(ValueError, match="disagree"):
+        stage(runtime.settings, mismatched, digest(mismatched), tmp_path)
+    monkeypatch.setattr(
+        "mcp_sorter.releases.shutil.copyfile",
+        lambda source, destination: destination.write_bytes(b"changed"),
+    )
+    with pytest.raises(ValueError, match="changed while"):
+        stage(runtime.settings, path, digest(path), tmp_path)
+
+
+def test_first_activation_works_before_state_exists(tmp_path, monkeypatch):
+    settings = Settings(data_dir=tmp_path / "new")
+    path = wheel(tmp_path)
+    fake_installer(monkeypatch, settings, path)
+    record = stage(settings, path, digest(path), tmp_path)
+    result = activate_release(settings, record.sha256)
+    assert result.active == record.sha256 and result.backup is None and result.previous is None
+    assert not (settings.data_dir / "state.sqlite").exists()

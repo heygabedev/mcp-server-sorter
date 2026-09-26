@@ -1,0 +1,17 @@
+services:
+  sorter:
+    image: ${SORTER_IMAGE:-ghcr.io/heygabedev/mcp-server-sorter:0.1.0}
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - sorter-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    init: true
+volumes:
+  sorter-data:

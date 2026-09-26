@@ -70,6 +70,8 @@ class Catalog:
 
     @contextmanager
     def connect(self, snapshot: str) -> Iterator[sqlite3.Connection]:
+        if not self.path(snapshot).is_file():
+            raise ValueError("Unknown catalog snapshot")
         with closing(
             sqlite3.connect(self.path(snapshot).resolve().as_uri() + "?mode=ro", uri=True)
         ) as db:

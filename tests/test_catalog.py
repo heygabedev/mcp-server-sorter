@@ -58,7 +58,7 @@ def test_invalid_refresh_keeps_current_catalog(catalog):
             catalog.publish(records, "2026-09-01")
     with pytest.raises(ValueError):
         catalog.activate("../../state")
-    with pytest.raises(sqlite3.OperationalError):
+    with pytest.raises(ValueError, match="Unknown"):
         catalog.activate("0" * 64)
     assert catalog.active() == original
 

@@ -20,7 +20,7 @@ mcp-sorter = "mcp_sorter.cli:app"
 
 [dependency-groups]
 dev = [
-  "pytest>=8.3,<9", "pytest-cov>=6,<8", "pytest-socket>=0.7,<1",
+  "pytest>=9.0.3,<10", "pytest-cov>=6,<8", "pytest-socket>=0.7,<1",
   "hypothesis>=6.130,<7", "respx>=0.22,<1", "ruff>=0.11,<1",
   "mypy>=1.15,<2", "schemathesis>=4,<5", "build>=1.2,<2",
   "pip-audit>=2.8,<3",
@@ -31,7 +31,7 @@ packages = ["src/mcp_sorter"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-ra --strict-markers --disable-socket"
+addopts = "-ra --strict-markers --disable-socket --allow-hosts=127.0.0.1,::1 --allow-unix-socket"
 markers = ["performance: explicit performance checks", "recovery: upgrade and recovery checks"]
 
 [tool.coverage.run]
@@ -53,4 +53,3 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 python_version = "3.13"
 strict = true
 files = ["src/mcp_sorter"]
-

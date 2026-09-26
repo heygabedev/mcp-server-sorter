@@ -65,3 +65,18 @@ test('keeps selected records ready to compare', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Compare & save' }));
   expect(screen.getByLabelText('Collection name')).toHaveValue('My toolkit');
 });
+
+test('renders poisoned metadata as text without creating executable elements', async () => {
+  const description = '<img src=x onerror="window.compromised=true">';
+  vi.mocked(fetch).mockResolvedValue({
+    ok: true,
+    json: async () => ({
+      ...ranking,
+      results: [{ ...ranking.results[0], server: { ...records[0], description } }],
+    }),
+  } as Response);
+  render(<App />);
+  fireEvent.click(await screen.findByRole('button', { name: 'GitHub' }));
+  expect(screen.getAllByText(description).length).toBeGreaterThan(0);
+  expect(document.querySelector('img[onerror]')).toBeNull();
+});

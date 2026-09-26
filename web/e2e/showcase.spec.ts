@@ -13,6 +13,16 @@ test('search, compare, save, export and evaluate without external requests', asy
   });
   await page.goto('/');
   await expect(page.getByRole('button', { name: 'GitHub', exact: true })).toBeVisible();
+  await page.getByLabel('Select GitHub').check();
+  await page.getByLabel('Select Slack').check();
+  await page.getByRole('button', { name: 'Compare & save' }).click();
+  await expect(
+    page.getByRole('region', { name: 'Server comparison' }).locator('tbody tr'),
+  ).toHaveCount(2);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.keyboard.press('Escape');
+  await page.getByLabel('Select GitHub').uncheck();
+  await page.getByLabel('Select Slack').uncheck();
   await page.getByLabel('Search servers').fill('github');
   await page.getByRole('button', { name: 'Find servers' }).click();
   await expect(page.locator('.server-card')).toHaveCount(1);
@@ -30,9 +40,17 @@ test('search, compare, save, export and evaluate without external requests', asy
   await page.getByRole('button', { name: 'Run evaluation', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Golden dataset report' })).toBeVisible();
   await expect(page.locator('tbody tr')).toHaveCount(90);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.screenshot({ path: 'test-results/showcase-evaluation.png' });
   await page.getByLabel('Baseline evaluation').selectOption({ index: 1 });
   await page.getByRole('button', { name: 'Compare baseline', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('regression gate: passed');
+  await page.getByLabel('Evaluation profile').selectOption('demo-malformed');
+  await page.getByRole('button', { name: 'Run evaluation', exact: true }).click();
+  await expect(page.getByText('LATEST RESULT · demo-malformed')).toBeVisible();
+  await expect(
+    page.getByRole('cell', { name: 'invalid-schema', exact: true }).first(),
+  ).toBeVisible();
   await page.getByRole('button', { name: 'Operations', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Durable jobs' })).toBeVisible();
   await page.getByRole('button', { name: 'Refresh catalog', exact: true }).click();
@@ -50,6 +68,7 @@ test('search, compare, save, export and evaluate without external requests', asy
   await expect(page.getByRole('status')).toContainText('activated together');
   await page.getByRole('button', { name: 'Create verified backup' }).click();
   await expect(page.getByRole('status')).toContainText('Backup created and verified');
+  await page.screenshot({ path: 'test-results/showcase-recovery.png' });
   const manifestDownload = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Verify and export manifest' }).click();
   expect((await manifestDownload).suggestedFilename()).toContain('-manifest.json');
@@ -67,6 +86,7 @@ test('accessible catalog, keyboard details and mobile layout', async ({ page }) 
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).not.toBeVisible();
+  await expect(page.getByRole('button', { name: 'GitHub', exact: true })).toBeFocused();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(() => window.scrollTo(0, 0));
   await expect(page.getByLabel('Search servers')).toBeVisible();

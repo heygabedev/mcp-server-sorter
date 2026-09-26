@@ -1,6 +1,17 @@
 from typing import Literal
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, HttpUrl
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, HttpUrl, field_validator
+
+
+class VersionedModel(BaseModel):
+    schema_version: Literal[1] = 1
+
+    @field_validator("schema_version", mode="before")
+    @classmethod
+    def reject_boolean_version(cls, value: object) -> object:
+        if isinstance(value, bool):
+            raise ValueError("Schema version must be an integer")
+        return value
 
 
 class Evidence(BaseModel):
@@ -26,7 +37,7 @@ class ServerRecord(BaseModel):
     status: Literal["active", "deprecated", "unknown"] = "unknown"
     updated_at: AwareDatetime
     evidence: tuple[Evidence, ...] = Field(min_length=1, max_length=30)
-    simulated: bool = False
+    simulated: bool = Field(default=False, strict=True)
 
 
 class Filters(BaseModel):
@@ -36,7 +47,7 @@ class Filters(BaseModel):
     auth: Literal["none", "api_key", "oauth", "unknown"] | None = None
     deployment: Literal["local", "remote", "unknown"] | None = None
     license: str | None = None
-    include_deprecated: bool = False
+    include_deprecated: bool = Field(default=False, strict=True)
 
     def matches(self, server: ServerRecord) -> bool:
         if server.status == "deprecated" and not self.include_deprecated:

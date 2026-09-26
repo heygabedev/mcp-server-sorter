@@ -26,7 +26,7 @@ Profile = Literal[
 
 
 class RankRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", strict=True)
     query: str = Field(default="", max_length=500)
     filters: Filters = Field(default_factory=Filters)
     snapshot: str | None = None

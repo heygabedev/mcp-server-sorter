@@ -1,11 +1,16 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.requests import Request
+from starlette.responses import JSONResponse
+from starlette.routing import Route
 
 from mcp_sorter import __version__
 from mcp_sorter.evaluation import EvaluationReport, evaluate, report_path, save_report
@@ -31,6 +36,10 @@ from mcp_sorter.telemetry import RequestTelemetry, Telemetry
 from mcp_sorter.versioning import Configuration, activate, active_versions
 
 
+class ErrorResponse(BaseModel):
+    detail: str | list[dict[str, Any]]
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     config = settings or Settings()
 
@@ -38,6 +47,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         with service_lock(config.data_dir):
             app.state.runtime = Runtime(config)
+            app.state.telemetry = Telemetry()
             worker = Worker(app.state.runtime)
             if config.worker_enabled:
                 worker.start()
@@ -55,17 +65,32 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         docs_url=None,
         redoc_url=None,
         lifespan=lifespan,
+        responses={
+            code: {"model": ErrorResponse} for code in (400, 403, 404, 405, 409, 413, 422, 503)
+        },
     )
     application.state.settings = config
-    application.state.telemetry = Telemetry()
     application.include_router(
-        operations_router(lambda: application.state.runtime, application.state.telemetry)
+        operations_router(lambda: application.state.runtime, lambda: application.state.telemetry)
     )
     application.add_middleware(RequestTelemetry)
     application.add_middleware(BodyLimit)
     application.add_middleware(
         TrustedHostMiddleware, allowed_hosts=["localhost", "127.0.0.1", "[::1]", "testserver"]
     )
+
+    @application.exception_handler(StarletteHTTPException)
+    async def http_error(request: Request, exc: StarletteHTTPException) -> JSONResponse:
+        headers = dict(exc.headers or {})
+        if exc.status_code == 405:
+            methods = {
+                method
+                for route in application.routes
+                if isinstance(route, Route) and route.path_regex.fullmatch(request.url.path)
+                for method in route.methods or []
+            }
+            headers["Allow"] = ", ".join(sorted(methods))
+        return JSONResponse({"detail": exc.detail}, status_code=exc.status_code, headers=headers)
 
     @application.get("/health/live")
     def live() -> dict[str, str]:

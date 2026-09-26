@@ -33,7 +33,7 @@ def status(runtime: Runtime) -> dict[str, object]:
     }
 
 
-def router(get_runtime: Callable[[], Runtime], telemetry: Telemetry) -> APIRouter:
+def router(get_runtime: Callable[[], Runtime], get_telemetry: Callable[[], Telemetry]) -> APIRouter:
     routes = APIRouter()
 
     @routes.post("/api/v1/jobs", status_code=202)
@@ -52,10 +52,11 @@ def router(get_runtime: Callable[[], Runtime], telemetry: Telemetry) -> APIRoute
 
     @routes.get("/api/v1/operations")
     def operations() -> dict[str, object]:
-        return {**status(get_runtime()), "traces": telemetry.spans.snapshot()}
+        return {**status(get_runtime()), "traces": get_telemetry().spans.snapshot()}
 
     @routes.get("/metrics", include_in_schema=False)
     def metrics() -> Response:
+        telemetry = get_telemetry()
         with get_runtime().engine.connect() as db:
             counts = {
                 str(row[0]): int(row[1])

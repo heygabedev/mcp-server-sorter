@@ -288,12 +288,35 @@ def save_report(directory: Path, report: EvaluationReport) -> None:
     )
 
 
-def compare_reports(baseline: EvaluationReport, candidate: EvaluationReport) -> dict[str, object]:
+GATE_POLICY_VERSION = "fixture-regression-v2"
+
+
+def gate_slice(old: list[CaseResult], new: list[CaseResult]) -> dict[str, Any]:
+    before, after = summarize(old), summarize(new)
+    old_score, new_score = before["ndcg_at_5"], after["ndcg_at_5"]
+    delta = new_score - old_score if new_score is not None and old_score is not None else None
+    failures = []
+    if delta is not None and not delta >= -0.02 - 1e-12:
+        failures.append("ndcg-regression")
+    if after["abstention_accuracy"] != 1:
+        failures.append("incorrect-abstention")
+    for metric in (
+        "constraint_violations",
+        "invalid_evidence_references",
+        "unsupported_claim_rate",
+    ):
+        if after[metric] != 0:
+            failures.append(metric)
+    return {"ndcg_delta": delta, "summary": after, "failures": failures, "passed": not failures}
+
+
+def compare_reports(baseline: EvaluationReport, candidate: EvaluationReport) -> dict[str, Any]:
     if not baseline.cases or not candidate.cases:
         raise ValueError("Paired comparisons require nonempty reports")
     if (
         baseline.dataset_sha256 != candidate.dataset_sha256
         or baseline.provenance["snapshot"] != candidate.provenance["snapshot"]
+        or baseline.execution_mode != candidate.execution_mode
     ):
         raise ValueError("Paired comparisons require identical datasets and snapshots")
     old = {case.id: case for case in baseline.cases}
@@ -306,6 +329,8 @@ def compare_reports(baseline: EvaluationReport, candidate: EvaluationReport) -> 
     differences: list[float] = []
     groups: dict[str, list[float]] = {}
     for case in candidate.cases:
+        if (case.intent_id, case.split) != (old[case.id].intent_id, old[case.id].split):
+            raise ValueError("Paired cases have incompatible intent or split assignments")
         new_score = case.metrics["ndcg_at_5"]
         old_score = old[case.id].metrics["ndcg_at_5"]
         if new_score is None and old_score is None:
@@ -326,23 +351,24 @@ def compare_reports(baseline: EvaluationReport, candidate: EvaluationReport) -> 
         else []
     )
     delta = sum(differences) / len(differences) if differences else None
-    summary = summarize(candidate.cases)
-    passed = (
-        (delta is None or delta >= -0.02)
-        and summary["abstention_accuracy"] == 1
-        and all(
-            summary[key] == 0
-            for key in (
-                "constraint_violations",
-                "invalid_evidence_references",
-                "unsupported_claim_rate",
-            )
+    slices = {"overall": gate_slice(baseline.cases, candidate.cases)}
+    for split in sorted({c.split for c in candidate.cases}):
+        slices[split] = gate_slice(
+            [c for c in baseline.cases if c.split == split],
+            [c for c in candidate.cases if c.split == split],
         )
-    )
+    failures = [
+        {"scope": scope, "code": code}
+        for scope, result in slices.items()
+        for code in result["failures"]
+    ]
     return {
         "ndcg_delta": delta,
         "ci95": [boot[24], boot[974]] if boot else None,
-        "passes_regression_gate": passed,
+        "passes_regression_gate": not failures,
+        "gate_policy_version": GATE_POLICY_VERSION,
+        "failures": failures,
+        "slices": slices,
         "bootstrap_unit": "intent",
-        "mode": "fixture",
+        "mode": candidate.execution_mode,
     }

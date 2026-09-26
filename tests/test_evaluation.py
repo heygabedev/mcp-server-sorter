@@ -143,6 +143,31 @@ def test_comparison_rejects_empty_and_duplicate_reports(runtime):
             compare_reports(report, report.model_copy(update={"cases": cases}))
 
 
+def test_comparison_detects_a_split_regression_hidden_by_the_average(runtime):
+    baseline = evaluate(runtime.catalog)
+    candidate = baseline.model_copy(deep=True)
+    for case in candidate.cases:
+        if case.split == "development" and case.metrics["ndcg_at_5"] is not None:
+            case.metrics["ndcg_at_5"] = 0.95
+    result = compare_reports(baseline, candidate)
+    assert result["ndcg_delta"] > -0.02
+    assert result["failures"] == [{"scope": "development", "code": "ndcg-regression"}]
+    assert not result["passes_regression_gate"]
+    candidate.cases[0].split = "heldout"
+    with pytest.raises(ValueError, match="split"):
+        compare_reports(baseline, candidate)
+
+
+@pytest.mark.parametrize("decrease,passed", [(0.02, True), (0.020001, False)])
+def test_ndcg_gate_threshold(runtime, decrease, passed):
+    baseline = evaluate(runtime.catalog)
+    candidate = baseline.model_copy(deep=True)
+    for case in candidate.cases:
+        if case.metrics["ndcg_at_5"] is not None:
+            case.metrics["ndcg_at_5"] -= decrease
+    assert compare_reports(baseline, candidate)["passes_regression_gate"] is passed
+
+
 def test_reports_are_immutable_and_html_is_escaped(runtime, tmp_path):
     report = evaluate(runtime.catalog)
     report.profile = "<script>alert(1)</script>"

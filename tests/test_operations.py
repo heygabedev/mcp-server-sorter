@@ -70,6 +70,40 @@ def test_job_is_recovered_after_worker_process_exits(runtime):
     assert recovered["status"] == "completed" and recovered["attempts"] == 2
 
 
+def test_worker_exit_after_json_publication_repairs_export_on_restart(runtime):
+    from mcp_sorter.evaluation import report_path
+
+    queued = enqueue(runtime, request())
+    script = "\n".join(
+        [
+            "import os",
+            "from mcp_sorter.runtime import Runtime",
+            "from mcp_sorter.settings import Settings",
+            "from mcp_sorter.jobs import claim, execute",
+            "import mcp_sorter.evaluation as evaluation",
+            "evaluation.render_saved_report = lambda *args: os._exit(17)",
+            "runtime = Runtime(Settings())",
+            "execute(runtime, claim(runtime.engine))",
+        ]
+    )
+    child = subprocess.run(
+        [sys.executable, "-c", script],
+        timeout=30,
+        env={**os.environ, "SORTER_DATA_DIR": str(runtime.settings.data_dir)},
+    )
+    assert child.returncode == 17
+    path = report_path(runtime.settings.data_dir, queued["id"])
+    original = path.read_bytes()
+    assert not path.with_suffix(".html").exists()
+    with runtime.engine.begin() as db:
+        db.execute(text("UPDATE jobs SET lease_until=0"))
+    assert run_once(runtime)
+    recovered = get_job(runtime.engine, queued["id"])
+    assert recovered["status"] == "completed" and recovered["attempts"] == 2
+    assert path.read_bytes() == original
+    assert path.with_suffix(".html").read_text().endswith("</html>")
+
+
 def test_slow_job_renews_its_lease(runtime, monkeypatch):
     queued = enqueue(runtime, request())
     observed = []

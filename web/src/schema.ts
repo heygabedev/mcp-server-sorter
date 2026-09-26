@@ -690,7 +690,7 @@ export interface components {
       schema_version: number;
       /**
        * Application Version
-       * @default 0.1.0
+       * @default 0.1.1
        */
       application_version: string;
       /** Snapshot */

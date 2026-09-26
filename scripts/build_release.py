@@ -9,12 +9,14 @@ import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from mcp_sorter import __version__
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--version", default="0.1.0")
+    parser.add_argument("--version", default=__version__)
     parser.add_argument("--skip-web", action="store_true")
     args = parser.parse_args()
     if not re.fullmatch(r"\d+\.\d+\.\d+(?:rc\d+)?", args.version):

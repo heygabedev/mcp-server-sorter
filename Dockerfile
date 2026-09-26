@@ -7,7 +7,7 @@ COPY src/mcp_sorter/data/catalog.json /src/mcp_sorter/data/catalog.json
 RUN npm run build
 
 FROM python:3.13-slim-bookworm@sha256:2325bb286ec344af3e5898cc224b5844e2707ac6e26b1632516fd3edc84a5e26 AS builder
-ARG APP_VERSION=0.1.0
+ARG APP_VERSION=0.1.1
 WORKDIR /build
 COPY . .
 COPY --from=web /web/dist ./web/dist
@@ -17,7 +17,7 @@ RUN pip install --no-cache-dir uv==0.5.9 \
     && uv export --no-dev --no-emit-project --no-hashes --format requirements-txt --output-file /requirements.txt
 
 FROM python:3.13-slim-bookworm@sha256:2325bb286ec344af3e5898cc224b5844e2707ac6e26b1632516fd3edc84a5e26
-ARG APP_VERSION=0.1.0
+ARG APP_VERSION=0.1.1
 LABEL org.opencontainers.image.source="https://github.com/heygabedev/mcp-server-sorter"
 LABEL org.opencontainers.image.version="${APP_VERSION}"
 COPY --from=builder /build/dist/*.whl /wheels/

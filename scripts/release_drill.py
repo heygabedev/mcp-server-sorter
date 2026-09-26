@@ -1,5 +1,6 @@
 """Install two built artifacts offline, switch versions, and verify rollback through HTTP."""
 
+import argparse
 import json
 import os
 import platform
@@ -11,6 +12,7 @@ from tempfile import TemporaryDirectory
 
 import httpx
 
+from mcp_sorter import __version__
 from mcp_sorter.recovery import digest
 from mcp_sorter.releases import activate_release, directory, python_path, rollback_release, stage
 from mcp_sorter.settings import Settings
@@ -79,10 +81,14 @@ def smoke(settings, identifier, expected):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--previous", default="0.1.0")
+    parser.add_argument("--candidate", default=__version__)
+    args = parser.parse_args()
     with TemporaryDirectory(prefix="sorter-release-drill-") as temporary:
         settings = Settings(data_dir=Path(temporary), worker_enabled=False)
         records = []
-        for version in ("0.1.0rc1", "0.1.0"):
+        for version in (args.previous, args.candidate):
             wheel = ROOT / "dist" / f"mcp_server_sorter-{version}-py3-none-any.whl"
             record = stage(settings, wheel, digest(wheel), ROOT / "dist" / "wheelhouse")
             records.append(record)
@@ -90,7 +96,7 @@ def main():
             snapshot = smoke(settings, record.sha256, version)
         rolled = rollback_release(settings)
         assert rolled.active == records[0].sha256
-        assert smoke(settings, rolled.active, "0.1.0rc1") == snapshot
+        assert smoke(settings, rolled.active, args.previous) == snapshot
         assert "private-drill-marker" not in (settings.data_dir / "drill.log").read_text("utf-8")
         report = {
             "platform": platform.platform(),

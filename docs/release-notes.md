@@ -1,3 +1,13 @@
+# v0.1.1
+
+Evaluation comparisons now reject incorrect abstention and check development and held-out slices independently. API, CLI, and UI comparisons identify failed rules and their scope. Interrupted evaluation jobs repair HTML exports from immutable JSON without rerunning the evaluation; publication is atomic and concurrent repairs are serialized.
+
+Workspace labels and filter checks also include the improvements merged after v0.1.0. Existing reports, collections, and state schema remain compatible.
+
+Verification passed 134 Python tests and 24 API subtests on each of Windows and Linux, 17 component tests, three Chromium journeys with accessibility checks, and the branch-coverage gates. Both platforms installed the wheel offline, exercised its packaged UI, upgraded from the published v0.1.0 artifact, and rolled back. See [patch acceptance](verification/v0.1.1/acceptance.json) and the [Windows](verification/v0.1.1/wheel-windows.json) and [Linux](verification/v0.1.1/wheel-linux.json) artifact records.
+
+No v0.1.1 container has been verified: Docker Desktop failed to start and automatic approval review blocked its runtime-file repair. macOS was not rerun. GitHub Actions remains disabled. Earlier container, benchmark, and macOS results below apply to v0.1.0 only.
+
 # v0.1.0
 
 The first offline showcase release of MCP Server Sorter.

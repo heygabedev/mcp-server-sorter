@@ -3,6 +3,7 @@ import pytest
 from fastapi.testclient import TestClient
 from typer.testing import CliRunner
 
+from mcp_sorter import __version__
 from mcp_sorter.api import create_app
 from mcp_sorter.cli import app
 from mcp_sorter.network import NetworkDenied, authorize_url, client
@@ -79,7 +80,7 @@ def test_writes_require_same_origin_or_explicit_development_origin(tmp_path):
 def test_cli_version():
     result = CliRunner().invoke(app, ["version"])
     assert result.exit_code == 0
-    assert result.stdout.strip() == "0.1.0"
+    assert result.stdout.strip() == __version__
 
 
 def test_serve_binds_only_loopback(monkeypatch):

@@ -1,5 +1,6 @@
 """Verify versioned container artifacts, shared data, backup, and rollback through HTTP."""
 
+import argparse
 import json
 import subprocess
 import time
@@ -7,6 +8,8 @@ from pathlib import Path
 from uuid import uuid4
 
 import httpx
+
+from mcp_sorter import __version__
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -18,7 +21,11 @@ def docker(*arguments, timeout=120):
 
 
 def main():
-    versions = ["0.1.0rc1", "0.1.0", "0.1.0rc1"]
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--previous", default="0.1.0")
+    parser.add_argument("--candidate", default=__version__)
+    args = parser.parse_args()
+    versions = [args.previous, args.candidate, args.previous]
     identifiers = {
         version: docker("image", "inspect", f"mcp-server-sorter:{version}", "--format", "{{.Id}}")
         for version in set(versions)
@@ -124,7 +131,11 @@ def main():
         report = {
             "engine": docker("version", "--format", "{{.Server.Version}}"),
             "platform": docker(
-                "image", "inspect", identifiers["0.1.0"], "--format", "{{.Os}}/{{.Architecture}}"
+                "image",
+                "inspect",
+                identifiers[args.candidate],
+                "--format",
+                "{{.Os}}/{{.Architecture}}",
             ),
             "versions": versions,
             "image_ids": identifiers,

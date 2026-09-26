@@ -2,6 +2,7 @@ import json
 import re
 import sqlite3
 from datetime import datetime
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -10,6 +11,17 @@ from mcp_sorter.catalog import Catalog
 from mcp_sorter.models import Filters, ServerRecord
 
 POLICY_VERSION = "bm25-evidence-v1"
+Profile = Literal[
+    "baseline",
+    "demo-balanced",
+    "demo-fast",
+    "demo-timeout",
+    "demo-malformed",
+    "demo-rate-limited",
+    "demo-unavailable",
+    "openrouter",
+    "litellm",
+]
 
 
 class RankRequest(BaseModel):
@@ -18,6 +30,7 @@ class RankRequest(BaseModel):
     filters: Filters = Field(default_factory=Filters)
     snapshot: str | None = None
     limit: int = Field(default=20, ge=1, le=50)
+    profile: Profile = "baseline"
 
 
 class RankedServer(BaseModel):
@@ -39,6 +52,7 @@ class Ranking(BaseModel):
     filters: Filters
     results: list[RankedServer]
     fallback_reason: str | None = None
+    model_metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 def query_expression(query: str) -> str:

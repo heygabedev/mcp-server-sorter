@@ -7,8 +7,9 @@ from pydantic import BaseModel, Field
 
 from mcp_sorter import __version__
 from mcp_sorter.evaluation import EvaluationReport, evaluate, report_path, save_report
+from mcp_sorter.gateways import rank_with_profile
 from mcp_sorter.models import ServerRecord
-from mcp_sorter.ranking import Ranking, RankRequest, compare, rank
+from mcp_sorter.ranking import Profile, Ranking, RankRequest, compare, rank
 from mcp_sorter.runtime import Runtime
 from mcp_sorter.settings import Settings
 from mcp_sorter.telemetry import RequestTelemetry, Telemetry
@@ -60,7 +61,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @application.post("/api/v1/rankings", response_model=Ranking)
     def rankings(request: RankRequest) -> Ranking:
         try:
-            return rank(application.state.runtime.catalog, request)
+            return rank_with_profile(application.state.runtime, request)
         except ValueError as exc:
             raise HTTPException(422, str(exc)) from exc
 
@@ -72,8 +73,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(422, str(exc)) from exc
 
     @application.post("/api/v1/evaluations", response_model=EvaluationReport)
-    def evaluations() -> EvaluationReport:
-        report = evaluate(application.state.runtime.catalog)
+    def evaluations(request: EvaluationRequest | None = None) -> EvaluationReport:
+        request = request or EvaluationRequest()
+        runtime: Runtime = application.state.runtime
+        report = evaluate(
+            runtime.catalog,
+            profile=request.profile,
+            ranker=lambda catalog, query: rank_with_profile(
+                runtime, query.model_copy(update={"profile": request.profile})
+            ),
+        )
         save_report(config.data_dir, report)
         return report
 
@@ -103,3 +112,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 class CompareRequest(BaseModel):
     ids: list[str] = Field(min_length=2, max_length=4)
     snapshot: str | None = None
+
+
+class EvaluationRequest(BaseModel):
+    profile: Profile = "baseline"

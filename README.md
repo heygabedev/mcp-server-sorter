@@ -105,6 +105,10 @@ uv run python scripts/record_fixture_results.py
 
 ## Tests and performance
 
+The v0.1.1 regression gate requires correct abstention on every case and checks NDCG changes separately for development and held-out cases, as well as overall. Comparison output identifies the failed scope and rule; simulated provider failures remain visible without failing a correct fallback ranking.
+
+Evaluation JSON is immutable. If a worker exits after saving JSON, its next attempt regenerates the HTML export from that saved result without rerunning the evaluation.
+
 Unit, property/metamorphic, SQLite integration, API schema, external contract, security, reliability, UI, accessibility, packaging, and recovery checks are implemented. Network access is denied in ordinary Python tests except loopback and local sockets. No external credentials are needed.
 
 ```sh

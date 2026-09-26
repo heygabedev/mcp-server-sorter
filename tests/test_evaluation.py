@@ -32,6 +32,10 @@ def test_metrics_against_analytical_examples():
     assert ranking_metrics([], {})["ndcg_at_5"] is None
     with pytest.raises(ValueError):
         ranking_metrics(["duplicate", "duplicate"], {"duplicate": 1})
+    mixed = ranking_metrics(["low", "high"], {"low": 1, "high": 3})
+    assert mixed["ndcg_at_5"] == pytest.approx((1 + 7 / math.log2(3)) / (7 + 1 / math.log2(3)))
+    late = ranking_metrics([f"wrong-{i}" for i in range(9)] + ["right"], {"right": 3})
+    assert late["recall_at_10"] == 1 and late["ndcg_at_5"] == 0
 
 
 def test_golden_dataset_shape_and_leakage_guards():

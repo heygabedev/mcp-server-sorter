@@ -1,0 +1,6 @@
+{
+  "format_version": 1,
+  "application_version": "0.1.0",
+  "python": "3.13",
+  "readable_state_revisions": ["0001", "0002", "0003", "0004", "0005"]
+}

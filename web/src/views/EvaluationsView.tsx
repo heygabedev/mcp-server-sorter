@@ -123,6 +123,8 @@ export default function EvaluationsView({
               ['Recall@10', 'recall_at_10'],
               ['Constraint violations', 'constraint_violations'],
               ['Fallback rate', 'fallback_rate'],
+              ['Unsupported claim rate', 'unsupported_claim_rate'],
+              ['Abstention rate', 'abstention_rate'],
             ].map(([label, key]) => (
               <div className="stat" key={key}>
                 <strong>{report.summary[key]?.toFixed(2) ?? '—'}</strong>
@@ -130,6 +132,7 @@ export default function EvaluationsView({
               </div>
             ))}
           </div>
+          <p className="caption">{report.claim_check_scope}</p>
           <div className="table-wrap" tabIndex={0} role="region" aria-label="Evaluation cases">
             <table>
               <thead>
@@ -139,6 +142,9 @@ export default function EvaluationsView({
                   <th>Top result</th>
                   <th>NDCG@5</th>
                   <th>Constraints</th>
+                  <th>Evidence errors</th>
+                  <th>Unsupported claims</th>
+                  <th>Fallback</th>
                 </tr>
               </thead>
               <tbody>
@@ -149,6 +155,11 @@ export default function EvaluationsView({
                     <td>{item.result_ids[0] ?? 'Abstained'}</td>
                     <td>{item.metrics.ndcg_at_5?.toFixed(3) ?? 'N/A'}</td>
                     <td>{item.constraint_violations === 0 ? 'Passed' : 'Failed'}</td>
+                    <td>{item.invalid_evidence_references}</td>
+                    <td>{item.unsupported_claims}</td>
+                    <td>
+                      {item.fallback ? String(item.model_metadata?.failure ?? 'Used') : 'None'}
+                    </td>
                   </tr>
                 ))}
               </tbody>

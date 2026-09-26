@@ -371,6 +371,16 @@ export interface components {
       constraint_violations: number;
       /** Invalid Evidence References */
       invalid_evidence_references: number;
+      /**
+       * Unsupported Claims
+       * @default 0
+       */
+      unsupported_claims: number;
+      /**
+       * Explanation Claims
+       * @default 0
+       */
+      explanation_claims: number;
       /** Abstention Correct */
       abstention_correct: boolean;
       /** Expected Top Correct */
@@ -470,6 +480,8 @@ export interface components {
       schema_version: number;
       /** Id */
       id: string;
+      /** Created At */
+      created_at?: string;
       /** Dataset Version */
       dataset_version: string;
       /** Dataset Sha256 */
@@ -507,6 +519,11 @@ export interface components {
        * @default Fixture regression results. Live model quality is unmeasured.
        */
       notice: string;
+      /**
+       * Claim Check Scope
+       * @default Generated explanation templates checked against pinned catalog facts; external vendor claims are not verified.
+       */
+      claim_check_scope: string;
     };
     /** EvaluationRequest */
     EvaluationRequest: {

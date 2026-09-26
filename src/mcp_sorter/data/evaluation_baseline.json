@@ -11,8 +11,10 @@
     "abstention_accuracy": 1.0,
     "expected_top_accuracy": 1.0,
     "fallback_rate": 0.0,
+    "abstention_rate": 0.3333333333333333,
     "cost_usd": 0.0,
-    "unsupported_claim_rate": null
+    "schema_failure_rate": 0.0,
+    "unsupported_claim_rate": 0.0
   },
   "notice": "Fixture regression results. Live model quality is unmeasured."
 }

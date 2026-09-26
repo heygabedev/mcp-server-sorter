@@ -2,9 +2,11 @@ import hashlib
 import html
 import json
 import math
+import platform
 import random
 import re
 from collections.abc import Callable
+from datetime import UTC, datetime
 from importlib.resources import files
 from pathlib import Path
 from time import perf_counter
@@ -16,7 +18,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from mcp_sorter.artifacts import write_once
 from mcp_sorter.catalog import Catalog
 from mcp_sorter.models import Filters
-from mcp_sorter.ranking import Ranking, RankRequest, rank
+from mcp_sorter.ranking import Ranking, RankRequest, query_expression, rank
 from mcp_sorter.storage import canonical
 from mcp_sorter.versioning import active_versions
 
@@ -101,6 +103,8 @@ class CaseResult(BaseModel):
     metrics: dict[str, float | None]
     constraint_violations: int
     invalid_evidence_references: int
+    unsupported_claims: int = 0
+    explanation_claims: int = 0
     abstention_correct: bool
     expected_top_correct: bool
     fallback: bool
@@ -111,6 +115,7 @@ class CaseResult(BaseModel):
 class EvaluationReport(BaseModel):
     schema_version: int = 1
     id: str
+    created_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
     dataset_version: str
     dataset_sha256: str
     source_sha256: str
@@ -121,6 +126,10 @@ class EvaluationReport(BaseModel):
     summary: dict[str, float | None]
     slices: dict[str, dict[str, float | None]] = Field(default_factory=dict)
     notice: str = "Fixture regression results. Live model quality is unmeasured."
+    claim_check_scope: str = (
+        "Generated explanation templates checked against pinned catalog facts; "
+        "external vendor claims are not verified."
+    )
 
 
 def summarize(cases: list[CaseResult]) -> dict[str, float | None]:
@@ -138,6 +147,8 @@ def summarize(cases: list[CaseResult]) -> dict[str, float | None]:
             "expected_top_accuracy": sum(c.expected_top_correct for c in cases) / len(cases),
             "fallback_rate": sum(c.fallback for c in cases) / len(cases),
             "mean_latency_ms": sum(c.latency_ms for c in cases) / len(cases),
+            "p95_latency_ms": sorted(c.latency_ms for c in cases)[math.ceil(len(cases) * 0.95) - 1],
+            "abstention_rate": sum(not c.result_ids for c in cases) / len(cases),
             "cost_usd": (
                 None if any(c.model_metadata.get("simulated") is False for c in cases) else 0.0
             ),
@@ -145,7 +156,8 @@ def summarize(cases: list[CaseResult]) -> dict[str, float | None]:
                 c.model_metadata.get("failure") == "invalid-schema" for c in cases
             )
             / len(cases),
-            "unsupported_claim_rate": None,
+            "unsupported_claim_rate": sum(c.unsupported_claims for c in cases)
+            / max(1, sum(c.explanation_claims for c in cases)),
         }
     )
     return result
@@ -191,9 +203,20 @@ def evaluate(
         )
         ids = [item.server.id for item in ranking.results]
         invalid = sum(
-            not set(item.evidence_ids) <= {e.id for e in records[item.server.id].evidence}
+            item.server.id not in records
+            or not set(item.evidence_ids) <= {e.id for e in records[item.server.id].evidence}
             for item in ranking.results
         )
+        unsupported = 0
+        for item in ranking.results:
+            original = records.get(item.server.id)
+            allowed = {
+                "Matches the search terms"
+                if query_expression(case.query)
+                else "Included in this catalog",
+                f"{len(original.evidence)} supporting evidence item(s)" if original else "",
+            }
+            unsupported += sum(reason not in allowed for reason in item.reasons)
         results.append(
             CaseResult(
                 id=case.id,
@@ -205,6 +228,8 @@ def evaluate(
                     not case.filters.matches(item.server) for item in ranking.results
                 ),
                 invalid_evidence_references=invalid,
+                unsupported_claims=unsupported,
+                explanation_claims=sum(len(item.reasons) for item in ranking.results),
                 abstention_correct=(not ids) == case.expect_abstention,
                 expected_top_correct=(
                     not ids if not case.expected_top else bool(ids) and ids[0] in case.expected_top
@@ -215,6 +240,7 @@ def evaluate(
             )
         )
         provenance = ranking.model_dump(exclude={"results", "query", "filters", "fallback_reason"})
+    provenance["python_version"] = platform.python_version()
     return EvaluationReport(
         id=uuid4().hex,
         dataset_version=dataset.version,
@@ -245,13 +271,18 @@ def save_report(directory: Path, report: EvaluationReport) -> None:
     write_once(path, report.model_dump_json(indent=2))
     rows = "".join(
         f"<tr><td>{html.escape(c.id)}</td><td>{html.escape(', '.join(c.result_ids))}</td>"
-        f"<td>{c.metrics['ndcg_at_5']}</td></tr>"
+        f"<td>{c.metrics['ndcg_at_5']}</td><td>{c.constraint_violations}</td>"
+        f"<td>{c.invalid_evidence_references}</td><td>{c.unsupported_claims}</td>"
+        f"<td>{html.escape(str(c.model_metadata.get('failure') or 'none'))}</td></tr>"
         for c in report.cases
     )
     path.with_suffix(".html").write_text(
         "<!doctype html><html lang='en'><meta charset='utf-8'><title>Evaluation report</title>"
         f"<h1>Evaluation: {html.escape(report.profile)}</h1><p>{html.escape(report.notice)}</p>"
-        "<table><thead><tr><th>Case</th><th>Results</th><th>NDCG@5</th></tr></thead>"
+        f"<p>{html.escape(report.claim_check_scope)}</p>"
+        "<table><thead><tr><th>Case</th><th>Results</th><th>NDCG@5</th>"
+        "<th>Constraints</th><th>Evidence errors</th><th>Unsupported claims</th>"
+        "<th>Fallback</th></tr></thead>"
         f"<tbody>{rows}</tbody></table></html>",
         encoding="utf-8",
     )
@@ -291,7 +322,11 @@ def compare_reports(baseline: EvaluationReport, candidate: EvaluationReport) -> 
     delta = sum(differences) / len(differences) if differences else None
     passed = (delta is None or delta >= -0.02) and all(
         candidate.summary[key] == 0
-        for key in ("constraint_violations", "invalid_evidence_references")
+        for key in (
+            "constraint_violations",
+            "invalid_evidence_references",
+            "unsupported_claim_rate",
+        )
     )
     return {
         "ndcg_delta": delta,

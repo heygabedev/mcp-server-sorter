@@ -2553,6 +2553,16 @@
             "type": "integer",
             "title": "Invalid Evidence References"
           },
+          "unsupported_claims": {
+            "type": "integer",
+            "title": "Unsupported Claims",
+            "default": 0
+          },
+          "explanation_claims": {
+            "type": "integer",
+            "title": "Explanation Claims",
+            "default": 0
+          },
           "abstention_correct": {
             "type": "boolean",
             "title": "Abstention Correct"
@@ -2749,6 +2759,10 @@
             "type": "string",
             "title": "Id"
           },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
           "dataset_version": {
             "type": "string",
             "title": "Dataset Version"
@@ -2818,6 +2832,11 @@
             "type": "string",
             "title": "Notice",
             "default": "Fixture regression results. Live model quality is unmeasured."
+          },
+          "claim_check_scope": {
+            "type": "string",
+            "title": "Claim Check Scope",
+            "default": "Generated explanation templates checked against pinned catalog facts; external vendor claims are not verified."
           }
         },
         "type": "object",

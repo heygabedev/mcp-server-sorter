@@ -1,4 +1,5 @@
 import json
+import logging
 
 import typer
 import uvicorn
@@ -26,6 +27,47 @@ catalog_app = typer.Typer(no_args_is_help=True)
 app.add_typer(catalog_app, name="catalog")
 eval_app = typer.Typer(no_args_is_help=True)
 app.add_typer(eval_app, name="eval")
+jobs_app = typer.Typer(no_args_is_help=True)
+app.add_typer(jobs_app, name="jobs")
+
+
+@jobs_app.command("submit")
+def submit_job(kind: str, key: str, profile: str = "baseline") -> None:
+    """Queue an offline evaluation or catalog refresh with an idempotency key."""
+    from mcp_sorter.jobs import JobRequest, enqueue
+
+    runtime = Runtime(Settings())
+    try:
+        request = JobRequest.model_validate(
+            {"kind": kind, "idempotency_key": key, "profile": profile}
+        )
+        typer.echo(json.dumps(enqueue(runtime, request), indent=2))
+    finally:
+        runtime.close()
+
+
+@jobs_app.command("work")
+def work_once() -> None:
+    """Process one available job; expired leases are recovered before claiming work."""
+    from mcp_sorter.jobs import run_once
+
+    runtime = Runtime(Settings())
+    try:
+        typer.echo(json.dumps({"processed": run_once(runtime)}))
+    finally:
+        runtime.close()
+
+
+@app.command("status")
+def operations_status() -> None:
+    """Inspect local jobs, fallback events and alert conditions."""
+    from mcp_sorter.operations import status
+
+    runtime = Runtime(Settings())
+    try:
+        typer.echo(json.dumps(status(runtime), indent=2))
+    finally:
+        runtime.close()
 
 
 @app.command()
@@ -60,6 +102,7 @@ def probe_endpoint(endpoint: str) -> None:
 @app.command()
 def serve(port: int = 8000) -> None:
     """Serve the application on the loopback interface."""
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
     uvicorn.run(create_app(), host="127.0.0.1", port=port)
 
 

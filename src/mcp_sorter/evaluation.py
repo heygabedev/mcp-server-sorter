@@ -13,6 +13,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from mcp_sorter.artifacts import write_once
 from mcp_sorter.catalog import Catalog
 from mcp_sorter.models import Filters
 from mcp_sorter.ranking import Ranking, RankRequest, rank
@@ -163,10 +164,11 @@ def evaluate(
     dataset: GoldenDataset | None = None,
     profile: str = "baseline",
     ranker: Callable[[Catalog, RankRequest], Ranking] = rank,
+    snapshot: str | None = None,
 ) -> EvaluationReport:
     dataset = dataset or load_golden()
     validate_golden(dataset)
-    snapshot = catalog.active()
+    snapshot = snapshot or catalog.active()
     records = {record.id: record for record in catalog.records(snapshot)}
     if any(identifier not in records for case in dataset.cases for identifier in case.relevance):
         raise ValueError("Golden judgments reference a server absent from the active snapshot")
@@ -230,9 +232,7 @@ def report_path(directory: Path, identifier: str) -> Path:
 
 def save_report(directory: Path, report: EvaluationReport) -> None:
     path = report_path(directory, report.id)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("x", encoding="utf-8") as output:
-        output.write(report.model_dump_json(indent=2))
+    write_once(path, report.model_dump_json(indent=2))
     rows = "".join(
         f"<tr><td>{html.escape(c.id)}</td><td>{html.escape(', '.join(c.result_ids))}</td>"
         f"<td>{c.metrics['ndcg_at_5']}</td></tr>"

@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="SORTER_", extra="forbid")
 
     mode: Literal["demo", "live"] = "demo"
+    worker_enabled: bool = True
     data_dir: Path = Path(".data")
     allowed_hosts: tuple[str, ...] = ()
     approved_probe_endpoints: tuple[str, ...] = ()

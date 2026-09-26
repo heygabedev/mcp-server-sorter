@@ -2,10 +2,12 @@ import { profiles } from './profiles';
 import PageTitle from './views/PageTitle';
 import CollectionsView from './views/CollectionsView';
 import EvaluationsView from './views/EvaluationsView';
+import OperationsView from './views/OperationsView';
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import {
   ArrowRight,
+  Activity,
   Check,
   ChevronRight,
   CircleHelp,
@@ -17,10 +19,11 @@ import {
   Terminal,
   X,
 } from 'lucide-react';
-import { api, download } from './api';
+import { api, download, waitForJob } from './api';
+import type { Job } from './api';
 import type { Profile, Ranking, Report, Selection, Server } from './api';
 
-type Tab = 'Discover' | 'Collections' | 'Evaluations' | 'Versions';
+type Tab = 'Discover' | 'Collections' | 'Evaluations' | 'Versions' | 'Operations';
 const categories = [
   'development',
   'knowledge',
@@ -38,6 +41,7 @@ const icons = {
   Collections: Folder,
   Evaluations: SlidersHorizontal,
   Versions: Layers3,
+  Operations: Activity,
 };
 
 export default function App() {
@@ -148,7 +152,14 @@ export default function App() {
     setBusy(true);
     setError('');
     try {
-      const result = await api<Report>('/evaluations', { profile });
+      const job = await waitForJob(
+        await api<Job>('/jobs', {
+          kind: 'evaluation',
+          profile,
+          idempotency_key: crypto.randomUUID(),
+        }),
+      );
+      const result = await api<Report>(`/evaluations/${JSON.parse(job.result!).report_id}`);
       setReport(result);
       setReports((current) => [result, ...current]);
     } catch (cause) {
@@ -242,6 +253,7 @@ export default function App() {
           </span>
         </header>
         <main id="main" tabIndex={-1}>
+          {tab === 'Operations' && <OperationsView />}
           {error && (
             <div className="alert error" role="alert">
               {error}
@@ -617,7 +629,7 @@ export default function App() {
           <>
             <span className="eyebrow">YOUR SHORTLIST</span>
             <h2>Compare & keep</h2>
-            <div className="table-wrap">
+            <div className="table-wrap" tabIndex={0} role="region" aria-label="Server comparison">
               <table>
                 <thead>
                   <tr>

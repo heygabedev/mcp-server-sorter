@@ -212,4 +212,7 @@ def rank_with_profile(
     except httpx.HTTPError:
         baseline.fallback_reason = "provider-error"
     baseline.mode = "baseline-fallback"
+    from mcp_sorter.events import record_event
+
+    record_event(runtime.engine, "fallback", baseline.fallback_reason or "unknown")
     return baseline

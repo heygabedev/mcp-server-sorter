@@ -8,7 +8,10 @@ from pydantic import BaseModel, Field
 from mcp_sorter import __version__
 from mcp_sorter.evaluation import EvaluationReport, evaluate, report_path, save_report
 from mcp_sorter.gateways import rank_with_profile
+from mcp_sorter.http_limits import BodyLimit
+from mcp_sorter.jobs import Worker
 from mcp_sorter.models import ServerRecord
+from mcp_sorter.operations import router as operations_router
 from mcp_sorter.ranking import Profile, Ranking, RankRequest, compare, rank
 from mcp_sorter.runtime import Runtime
 from mcp_sorter.selections import (
@@ -30,11 +33,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.runtime = Runtime(config)
+        worker = Worker(app.state.runtime)
+        if config.worker_enabled:
+            worker.start()
         try:
             yield
         finally:
+            if config.worker_enabled:
+                worker.close()
             app.state.runtime.close()
-            app.state.telemetry.provider.shutdown()
+            app.state.telemetry.close()
 
     application = FastAPI(
         title="MCP Server Sorter",
@@ -45,7 +53,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     application.state.settings = config
     application.state.telemetry = Telemetry()
+    application.include_router(
+        operations_router(lambda: application.state.runtime, application.state.telemetry)
+    )
     application.add_middleware(RequestTelemetry)
+    application.add_middleware(BodyLimit)
     application.add_middleware(
         TrustedHostMiddleware, allowed_hosts=["localhost", "127.0.0.1", "[::1]", "testserver"]
     )

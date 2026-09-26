@@ -41,6 +41,7 @@ test('search, compare, save, export and evaluate without external requests', asy
   await expect(page.getByRole('heading', { name: 'Golden dataset report' })).toBeVisible();
   await expect(page.locator('tbody tr')).toHaveCount(90);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: 'test-results/showcase-evaluation.png' });
   await page.getByLabel('Baseline evaluation').selectOption({ index: 1 });
   await page.getByRole('button', { name: 'Compare baseline', exact: true }).click();
@@ -68,6 +69,7 @@ test('search, compare, save, export and evaluate without external requests', asy
   await expect(page.getByRole('status')).toContainText('activated together');
   await page.getByRole('button', { name: 'Create verified backup' }).click();
   await expect(page.getByRole('status')).toContainText('Backup created and verified');
+  await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: 'test-results/showcase-recovery.png' });
   const manifestDownload = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Verify and export manifest' }).click();

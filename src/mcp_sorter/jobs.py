@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import Engine, text
 from sqlalchemy.exc import SQLAlchemyError
 
-from mcp_sorter.evaluation import EvaluationReport, evaluate, report_path, save_report
+from mcp_sorter.evaluation import evaluate, render_saved_report, report_path, save_report
 from mcp_sorter.events import record_event
 from mcp_sorter.gateways import rank_with_profile
 from mcp_sorter.runtime import Runtime
@@ -198,7 +198,7 @@ def execute(runtime: Runtime, job: dict[str, Any]) -> dict[str, Any]:
     if payload["kind"] == "evaluation":
         path = report_path(runtime.settings.data_dir, job["id"])
         if path.exists():
-            EvaluationReport.model_validate_json(path.read_text("utf-8"))
+            render_saved_report(runtime.settings.data_dir, job["id"])
         else:
             report = evaluate(
                 runtime.catalog,
@@ -213,7 +213,7 @@ def execute(runtime: Runtime, job: dict[str, Any]) -> dict[str, Any]:
             try:
                 save_report(runtime.settings.data_dir, report)
             except FileExistsError:
-                EvaluationReport.model_validate_json(path.read_text("utf-8"))
+                render_saved_report(runtime.settings.data_dir, job["id"])
         return {"report_id": job["id"]}
     if runtime.settings.mode == "demo":
         records = runtime.catalog.records(payload["snapshot"])

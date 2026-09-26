@@ -130,6 +130,40 @@ def test_pinned_evaluation_survives_refresh_and_report_reuse(runtime):
     assert not run_once(runtime)
 
 
+def test_job_reuses_json_and_repairs_html_without_running_ranker(runtime, monkeypatch):
+    from mcp_sorter.evaluation import report_path
+
+    job = enqueue(runtime, request())
+    execute(runtime, job)
+    path = report_path(runtime.settings.data_dir, job["id"])
+    original = path.read_bytes()
+
+    def forbidden(*args, **kwargs):
+        pytest.fail("Saved evaluations must not run again")
+
+    monkeypatch.setattr("mcp_sorter.jobs.evaluate", forbidden)
+    path.with_suffix(".html").unlink()
+    execute(runtime, job)
+    assert path.with_suffix(".html").read_text().endswith("</html>")
+    assert path.read_bytes() == original
+    path.write_text("corrupted")
+    with pytest.raises(ValueError):
+        execute(runtime, job)
+
+
+def test_racing_evaluation_writer_repairs_the_winning_report(runtime, monkeypatch):
+    from mcp_sorter.evaluation import save_report
+
+    job = enqueue(runtime, request())
+
+    def other_writer(directory, report):
+        save_report(directory, report)
+        raise FileExistsError("Another worker already published this report")
+
+    monkeypatch.setattr("mcp_sorter.jobs.save_report", other_writer)
+    assert execute(runtime, job) == {"report_id": job["id"]}
+
+
 def test_refresh_preserves_concurrent_operator_activation(runtime):
     enqueue(runtime, request(kind="catalog-refresh"))
     job = claim(runtime.engine)

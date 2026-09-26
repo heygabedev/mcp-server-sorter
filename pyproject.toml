@@ -1,0 +1,56 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mcp-server-sorter"
+version = "0.1.0"
+description = "Evidence-led discovery and reproducible comparisons of MCP servers"
+requires-python = ">=3.13,<3.14"
+license = "MIT"
+dependencies = [
+  "fastapi>=0.115,<1", "uvicorn>=0.34,<1", "pydantic-settings>=2.8,<3",
+  "sqlalchemy>=2.0,<3", "alembic>=1.15,<2", "httpx>=0.28,<1",
+  "typer>=0.15,<1", "mcp>=1.9,<2", "opentelemetry-api>=1.30,<2",
+  "opentelemetry-sdk>=1.30,<2", "prometheus-client>=0.21,<1",
+]
+
+[project.scripts]
+mcp-sorter = "mcp_sorter.cli:app"
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3,<9", "pytest-cov>=6,<8", "pytest-socket>=0.7,<1",
+  "hypothesis>=6.130,<7", "respx>=0.22,<1", "ruff>=0.11,<1",
+  "mypy>=1.15,<2", "schemathesis>=4,<5", "build>=1.2,<2",
+  "pip-audit>=2.8,<3",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mcp_sorter"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers --disable-socket"
+markers = ["performance: explicit performance checks", "recovery: upgrade and recovery checks"]
+
+[tool.coverage.run]
+branch = true
+source = ["mcp_sorter"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 85
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+files = ["src/mcp_sorter"]
+

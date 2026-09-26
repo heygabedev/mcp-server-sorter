@@ -13,7 +13,11 @@ interface Operations {
   worker_enabled: boolean;
 }
 
-export default function OperationsView() {
+export default function OperationsView({
+  onCatalogChanged,
+}: {
+  onCatalogChanged: () => Promise<void>;
+}) {
   const [status, setStatus] = useState<Operations | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -40,6 +44,7 @@ export default function OperationsView() {
       await reload();
       await waitForJob(job);
       await reload();
+      await onCatalogChanged();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Refresh failed');
     } finally {

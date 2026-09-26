@@ -4,6 +4,7 @@ export type Server = components['schemas']['ServerRecord'];
 export type Ranking = components['schemas']['Ranking'];
 export type Selection = components['schemas']['Selection'];
 export type Report = components['schemas']['EvaluationReport'];
+export type WorkspaceInfo = components['schemas']['WorkspaceInfo'];
 export type Profile = NonNullable<components['schemas']['RankRequest']['profile']>;
 
 export interface Job {

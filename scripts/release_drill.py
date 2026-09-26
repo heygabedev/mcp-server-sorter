@@ -57,7 +57,17 @@ def smoke(settings, identifier, expected):
                 )
                 return health.json()["snapshot"]
         finally:
-            process.terminate()
+            if os.name == "nt":
+                # The Windows venv launcher can start a child interpreter. Stop
+                # the owned process tree so its service lock cannot outlive it.
+                subprocess.run(
+                    ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                    capture_output=True,
+                    check=False,
+                    timeout=10,
+                )
+            else:
+                process.terminate()
             try:
                 process.wait(timeout=10)
             except subprocess.TimeoutExpired:

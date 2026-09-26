@@ -44,6 +44,35 @@ beforeEach(() => {
   };
 });
 
+test('shows the failed evaluation scope and reason', async () => {
+  const saved = {
+    id: 'report',
+    profile: 'baseline',
+    cases: [],
+    summary: {},
+    dataset_version: 'v1',
+  };
+  mockEndpoints({
+    '/api/v1/evaluations': [saved],
+    '/api/v1/evaluation-comparison?baseline=report&candidate=report': {
+      ndcg_delta: 0,
+      ci95: [0, 0],
+      passes_regression_gate: false,
+      gate_policy_version: 'fixture-regression-v2',
+      failures: [{ scope: 'heldout', code: 'incorrect-abstention' }],
+    },
+  });
+  render(<App />);
+  await screen.findByRole('button', { name: 'GitHub' });
+  fireEvent.click(screen.getByRole('button', { name: 'Evaluations' }));
+  fireEvent.click(await screen.findByRole('button', { name: /baseline.*v1/ }));
+  fireEvent.change(screen.getByLabelText('Baseline evaluation'), { target: { value: 'report' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Compare baseline' }));
+  expect(await screen.findByText(/heldout: incorrect abstention/)).toHaveTextContent(
+    'Paired regression gate: failed',
+  );
+});
+
 test('loads the catalog and exposes inspectable details', async () => {
   render(<App />);
   expect(await screen.findByRole('button', { name: 'GitHub' })).toBeInTheDocument();

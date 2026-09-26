@@ -41,9 +41,11 @@ export default function EvaluationsView({
         ndcg_delta: number | null;
         ci95: number[] | null;
         passes_regression_gate: boolean;
+        gate_policy_version: string;
+        failures: { scope: string; code: string }[];
       }>(`/evaluation-comparison?baseline=${baseline}&candidate=${report.id}`);
       setComparison(
-        `NDCG@5 change: ${result.ndcg_delta?.toFixed(3) ?? 'n/a'}. Paired regression gate: ${result.passes_regression_gate ? 'passed' : 'failed'}. 95% interval: ${result.ci95?.map((v) => v.toFixed(3)).join(' to ') ?? 'n/a'}.`,
+        `NDCG@5 change: ${result.ndcg_delta?.toFixed(3) ?? 'n/a'}. Paired regression gate: ${result.passes_regression_gate ? 'passed' : 'failed'}. 95% interval: ${result.ci95?.map((v) => v.toFixed(3)).join(' to ') ?? 'n/a'}. Policy: ${result.gate_policy_version}. ${result.failures.map((failure) => `${failure.scope}: ${failure.code.replaceAll(/[-_]/g, ' ')}`).join('; ')}`,
       );
     } catch (cause) {
       setComparison(cause instanceof Error ? cause.message : 'Comparison failed');
@@ -137,6 +139,7 @@ export default function EvaluationsView({
               ['Fallback rate', 'fallback_rate'],
               ['Unsupported claim rate', 'unsupported_claim_rate'],
               ['Abstention rate', 'abstention_rate'],
+              ['Abstention correctness', 'abstention_accuracy'],
             ].map(([label, key]) => (
               <div className="stat" key={key}>
                 <strong>{report.summary[key]?.toFixed(2) ?? '—'}</strong>
@@ -156,6 +159,7 @@ export default function EvaluationsView({
                   <th>Constraints</th>
                   <th>Evidence errors</th>
                   <th>Unsupported claims</th>
+                  <th>Abstention correctness</th>
                   <th>Fallback</th>
                 </tr>
               </thead>
@@ -169,6 +173,7 @@ export default function EvaluationsView({
                     <td>{item.constraint_violations === 0 ? 'Passed' : 'Failed'}</td>
                     <td>{item.invalid_evidence_references}</td>
                     <td>{item.unsupported_claims}</td>
+                    <td>{item.abstention_correct ? 'Passed' : 'Failed'}</td>
                     <td>
                       {item.fallback ? String(item.model_metadata?.failure ?? 'Used') : 'None'}
                     </td>

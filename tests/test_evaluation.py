@@ -168,6 +168,26 @@ def test_ndcg_gate_threshold(runtime, decrease, passed):
     assert compare_reports(baseline, candidate)["passes_regression_gate"] is passed
 
 
+def test_gate_failures_reach_api_and_cli(runtime, monkeypatch):
+    baseline = evaluate(runtime.catalog)
+    candidate = baseline.model_copy(deep=True)
+    candidate.id = "f" * 32
+    candidate.cases[0].abstention_correct = False
+    save_report(runtime.settings.data_dir, baseline)
+    save_report(runtime.settings.data_dir, candidate)
+    monkeypatch.setenv("SORTER_DATA_DIR", str(runtime.settings.data_dir))
+    result = CliRunner().invoke(app, ["eval", "compare", baseline.id, candidate.id])
+    assert result.exit_code == 1
+    assert json.loads(result.stdout)["gate_policy_version"] == "fixture-regression-v2"
+    with TestClient(create_app(runtime.settings)) as http:
+        result = http.get(
+            "/api/v1/evaluation-comparison",
+            params={"baseline": baseline.id, "candidate": candidate.id},
+        )
+        assert result.status_code == 200
+        assert {"scope": "overall", "code": "incorrect-abstention"} in result.json()["failures"]
+
+
 def test_reports_are_immutable_and_html_is_escaped(runtime, tmp_path):
     report = evaluate(runtime.catalog)
     report.profile = "<script>alert(1)</script>"

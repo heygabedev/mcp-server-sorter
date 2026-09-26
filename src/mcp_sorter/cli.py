@@ -211,7 +211,8 @@ def probe_endpoint(endpoint: str) -> None:
 def serve(port: int = 8000, host: Literal["127.0.0.1", "0.0.0.0"] = "127.0.0.1") -> None:
     """Serve the application, binding to loopback unless a host is explicitly supplied."""
     logging.basicConfig(level=logging.INFO, format="%(message)s")
-    uvicorn.run(create_app(), host=host, port=port)
+    # RequestTelemetry emits safe request IDs/statuses; URL access logs can expose queries.
+    uvicorn.run(create_app(), host=host, port=port, access_log=False)
 
 
 @app.command()

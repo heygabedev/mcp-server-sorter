@@ -131,6 +131,7 @@ def main():
                     str(port),
                     "--log-level",
                     "warning",
+                    "--no-access-log",
                 ],
                 env={
                     **os.environ,

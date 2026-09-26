@@ -39,6 +39,21 @@ test('search, compare, save, export and evaluate without external requests', asy
   await expect(page.getByRole('button', { name: 'Refresh catalog', exact: true })).toBeEnabled();
   await expect(page.getByText('catalog-refresh', { exact: true }).first()).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.getByRole('button', { name: 'Versions', exact: true }).click();
+  await page.getByRole('button', { name: 'Add title-focused configuration' }).click();
+  await expect(page.getByRole('status')).toContainText('Alternative ranking configuration saved');
+  const titleConfiguration = await page
+    .getByRole('option', { name: /Titles first/ })
+    .getAttribute('value');
+  await page.getByLabel('Ranking configuration').selectOption(titleConfiguration!);
+  await page.getByRole('button', { name: 'Activate selected versions' }).click();
+  await expect(page.getByRole('status')).toContainText('activated together');
+  await page.getByRole('button', { name: 'Create verified backup' }).click();
+  await expect(page.getByRole('status')).toContainText('Backup created and verified');
+  const manifestDownload = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Verify and export manifest' }).click();
+  expect((await manifestDownload).suggestedFilename()).toContain('-manifest.json');
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   expect(external).toEqual([]);
 });
 

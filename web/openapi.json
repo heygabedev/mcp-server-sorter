@@ -580,6 +580,171 @@
         }
       }
     },
+    "/api/v1/configurations": {
+      "post": {
+        "summary": "Configurations",
+        "operationId": "configurations_api_v1_configurations_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Configuration"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Configurations Api V1 Configurations Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/versions/activate": {
+      "post": {
+        "summary": "Activate Versions",
+        "operationId": "activate_versions_api_v1_versions_activate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActivationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Activate Versions Api V1 Versions Activate Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/backups": {
+      "get": {
+        "summary": "Backups",
+        "operationId": "backups_api_v1_backups_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array",
+                  "title": "Response Backups Api V1 Backups Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Backup",
+        "operationId": "create_backup_api_v1_backups_post",
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Create Backup Api V1 Backups Post"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/backups/{identifier}": {
+      "get": {
+        "summary": "Verify Backup",
+        "operationId": "verify_backup_api_v1_backups__identifier__get",
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Identifier"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Verify Backup Api V1 Backups  Identifier  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/versions/diff": {
       "get": {
         "summary": "Version Diff",
@@ -638,6 +803,23 @@
   },
   "components": {
     "schemas": {
+      "ActivationRequest": {
+        "properties": {
+          "snapshot": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Snapshot"
+          },
+          "configuration": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Configuration"
+          }
+        },
+        "type": "object",
+        "required": ["snapshot", "configuration"],
+        "title": "ActivationRequest"
+      },
       "CaseResult": {
         "properties": {
           "id": {
@@ -778,6 +960,71 @@
         "type": "object",
         "required": ["ids"],
         "title": "CompareRequest"
+      },
+      "Configuration": {
+        "properties": {
+          "schema_version": {
+            "type": "integer",
+            "const": 1,
+            "title": "Schema Version",
+            "default": 1
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name",
+            "default": "Balanced"
+          },
+          "version": {
+            "type": "string",
+            "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+            "title": "Version",
+            "default": "1.0.0"
+          },
+          "algorithm": {
+            "type": "string",
+            "const": "bm25-evidence-v1",
+            "title": "Algorithm",
+            "default": "bm25-evidence-v1"
+          },
+          "name_weight": {
+            "type": "number",
+            "maximum": 20.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Name Weight",
+            "default": 5
+          },
+          "description_weight": {
+            "type": "number",
+            "maximum": 20.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Description Weight",
+            "default": 1
+          },
+          "tags_weight": {
+            "type": "number",
+            "maximum": 20.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Tags Weight",
+            "default": 2
+          },
+          "prompt_version": {
+            "type": "string",
+            "const": "evidence-order-v1",
+            "title": "Prompt Version",
+            "default": "evidence-order-v1"
+          },
+          "model_profiles_version": {
+            "type": "string",
+            "const": "profiles-v1",
+            "title": "Model Profiles Version",
+            "default": "profiles-v1"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "Configuration"
       },
       "EvaluationReport": {
         "properties": {
@@ -1066,6 +1313,17 @@
             ],
             "title": "Snapshot"
           },
+          "configuration": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Configuration"
+          },
           "limit": {
             "type": "integer",
             "maximum": 50.0,
@@ -1137,6 +1395,21 @@
           "snapshot": {
             "type": "string",
             "title": "Snapshot"
+          },
+          "configuration": {
+            "type": "string",
+            "title": "Configuration",
+            "default": ""
+          },
+          "prompt_version": {
+            "type": "string",
+            "title": "Prompt Version",
+            "default": "evidence-order-v1"
+          },
+          "model_profiles_version": {
+            "type": "string",
+            "title": "Model Profiles Version",
+            "default": "profiles-v1"
           },
           "as_of": {
             "type": "string",

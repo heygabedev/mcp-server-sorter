@@ -13,6 +13,7 @@ from mcp_sorter.jobs import Worker
 from mcp_sorter.models import ServerRecord
 from mcp_sorter.operations import router as operations_router
 from mcp_sorter.ranking import Profile, Ranking, RankRequest, compare, rank
+from mcp_sorter.recovery import backup, service_lock, validate_backup
 from mcp_sorter.runtime import Runtime
 from mcp_sorter.selections import (
     Selection,
@@ -25,6 +26,7 @@ from mcp_sorter.selections import (
 )
 from mcp_sorter.settings import Settings
 from mcp_sorter.telemetry import RequestTelemetry, Telemetry
+from mcp_sorter.versioning import Configuration, activate, active_versions
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -32,17 +34,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-        app.state.runtime = Runtime(config)
-        worker = Worker(app.state.runtime)
-        if config.worker_enabled:
-            worker.start()
-        try:
-            yield
-        finally:
+        with service_lock(config.data_dir):
+            app.state.runtime = Runtime(config)
+            worker = Worker(app.state.runtime)
             if config.worker_enabled:
-                worker.close()
-            app.state.runtime.close()
-            app.state.telemetry.close()
+                worker.start()
+            try:
+                yield
+            finally:
+                if config.worker_enabled:
+                    worker.close()
+                app.state.runtime.close()
+                app.state.telemetry.close()
 
     application = FastAPI(
         title="MCP Server Sorter",
@@ -156,8 +159,54 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @application.get("/api/v1/versions")
     def versions() -> dict[str, object]:
-        catalog = application.state.runtime.catalog
-        return {"active_catalog": catalog.active(), "snapshots": catalog.snapshots()}
+        runtime: Runtime = application.state.runtime
+        snapshot, configuration = active_versions(runtime.engine)
+        return {
+            "active_catalog": snapshot,
+            "active_configuration": configuration,
+            "snapshots": runtime.catalog.snapshots(),
+            "configurations": runtime.configurations.versions(),
+        }
+
+    @application.post("/api/v1/configurations", status_code=201)
+    def configurations(request: Configuration) -> dict[str, str]:
+        return {"id": application.state.runtime.configurations.publish(request)}
+
+    @application.post("/api/v1/versions/activate")
+    def activate_versions(request: ActivationRequest) -> dict[str, str]:
+        runtime: Runtime = application.state.runtime
+        try:
+            activate(
+                runtime.catalog, runtime.configurations, request.snapshot, request.configuration
+            )
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+        return {"snapshot": request.snapshot, "configuration": request.configuration}
+
+    @application.post("/api/v1/backups", status_code=201)
+    def create_backup() -> dict[str, object]:
+        path = backup(application.state.runtime)
+        return {"id": path.name, "manifest": validate_backup(path).model_dump()}
+
+    @application.get("/api/v1/backups")
+    def backups() -> list[str]:
+        directory = config.data_dir / "backups"
+        return sorted(
+            path.parent.name
+            for path in directory.glob("*/manifest.json")
+            if not path.parent.name.startswith(".")
+        )
+
+    @application.get("/api/v1/backups/{identifier}")
+    def verify_backup(identifier: str) -> dict[str, object]:
+        import re
+
+        try:
+            if re.fullmatch(r"[a-f0-9]{32}", identifier) is None:
+                raise ValueError("Invalid backup identifier")
+            return validate_backup(config.data_dir / "backups" / identifier).model_dump()
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
 
     @application.get("/api/v1/versions/diff")
     def version_diff(before: str, after: str) -> dict[str, list[str]]:
@@ -182,3 +231,8 @@ class CollectionRequest(BaseModel):
     name: str = Field(min_length=1, max_length=80)
     ids: list[str] = Field(min_length=1, max_length=50)
     snapshot: str | None = None
+
+
+class ActivationRequest(BaseModel):
+    snapshot: str = Field(pattern=r"^[a-f0-9]{64}$")
+    configuration: str = Field(pattern=r"^[a-f0-9]{64}$")

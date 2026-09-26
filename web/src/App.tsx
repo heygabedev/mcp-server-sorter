@@ -1,5 +1,5 @@
 import { profiles } from './profiles';
-import PageTitle from './views/PageTitle';
+import VersionsView from './views/VersionsView';
 import CollectionsView from './views/CollectionsView';
 import EvaluationsView from './views/EvaluationsView';
 import OperationsView from './views/OperationsView';
@@ -61,11 +61,6 @@ export default function App() {
   const [collections, setCollections] = useState<Selection[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
   const [report, setReport] = useState<Report | null>(null);
-  const [versions, setVersions] = useState<{ active_catalog: string; snapshots: string[] } | null>(
-    null,
-  );
-  const [previous, setPrevious] = useState('');
-  const [diff, setDiff] = useState<Record<string, string[]> | null>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const requestNumber = useRef(0);
 
@@ -113,7 +108,6 @@ export default function App() {
     try {
       if (next === 'Collections') setCollections(await api<Selection[]>('/collections'));
       if (next === 'Evaluations') setReports(await api<Report[]>('/evaluations'));
-      if (next === 'Versions') setVersions(await api('/versions'));
     } catch (cause) {
       setError(message(cause));
     }
@@ -505,69 +499,7 @@ export default function App() {
               setReport={setReport}
             />
           )}
-          {tab === 'Versions' && (
-            <>
-              <PageTitle
-                eyebrow="REPRODUCIBLE BY DESIGN"
-                title="A catalog with a memory."
-                description="Every snapshot keeps its own search index. Compare changes without rewriting the past."
-              />
-              <section className="panel">
-                <span className="eyebrow">ACTIVE SNAPSHOT</span>
-                <h2>Immutable catalog</h2>
-                <code className="hash">{versions?.active_catalog ?? 'Loading…'}</code>
-                <p>
-                  Saved collections retain their original server versions when the active catalog
-                  changes.
-                </p>
-              </section>
-              <section className="panel">
-                <h2>Compare snapshots</h2>
-                <div className="inline-form">
-                  <select
-                    aria-label="Earlier snapshot"
-                    value={previous}
-                    onChange={(event) => setPrevious(event.target.value)}
-                  >
-                    <option value="">Choose a snapshot</option>
-                    {versions?.snapshots.map((item) => (
-                      <option key={item} value={item}>
-                        {item.slice(0, 20)}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    className="secondary"
-                    disabled={!previous || !versions}
-                    onClick={async () => {
-                      try {
-                        setDiff(
-                          await api(
-                            `/versions/diff?before=${previous}&after=${versions!.active_catalog}`,
-                          ),
-                        );
-                      } catch (cause) {
-                        setError(message(cause));
-                      }
-                    }}
-                  >
-                    Compare with active
-                  </button>
-                </div>
-                {diff && (
-                  <div className="metric-grid">
-                    {Object.entries(diff).map(([key, values]) => (
-                      <div className="stat" key={key}>
-                        <strong>{values.length}</strong>
-                        <span>{key}</span>
-                        <p>{values.join(', ')}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </section>
-            </>
-          )}
+          {tab === 'Versions' && <VersionsView />}
         </main>
         <footer className="workspace-footer">
           <span>MCP SERVER SORTER</span>

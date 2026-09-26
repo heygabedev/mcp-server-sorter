@@ -18,6 +18,7 @@ from mcp_sorter.catalog import Catalog
 from mcp_sorter.models import Filters
 from mcp_sorter.ranking import Ranking, RankRequest, rank
 from mcp_sorter.storage import canonical
+from mcp_sorter.versioning import active_versions
 
 
 class GoldenCase(BaseModel):
@@ -165,10 +166,13 @@ def evaluate(
     profile: str = "baseline",
     ranker: Callable[[Catalog, RankRequest], Ranking] = rank,
     snapshot: str | None = None,
+    configuration: str | None = None,
 ) -> EvaluationReport:
     dataset = dataset or load_golden()
     validate_golden(dataset)
-    snapshot = snapshot or catalog.active()
+    active_catalog, active_configuration = active_versions(catalog.engine)
+    snapshot = snapshot or active_catalog
+    configuration = configuration or active_configuration
     records = {record.id: record for record in catalog.records(snapshot)}
     if any(identifier not in records for case in dataset.cases for identifier in case.relevance):
         raise ValueError("Golden judgments reference a server absent from the active snapshot")
@@ -177,7 +181,13 @@ def evaluate(
     for case in dataset.cases:
         started = perf_counter()
         ranking = ranker(
-            catalog, RankRequest(query=case.query, filters=case.filters, snapshot=snapshot)
+            catalog,
+            RankRequest(
+                query=case.query,
+                filters=case.filters,
+                snapshot=snapshot,
+                configuration=configuration,
+            ),
         )
         ids = [item.server.id for item in ranking.results]
         invalid = sum(

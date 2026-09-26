@@ -94,6 +94,16 @@ class Catalog:
             ]
             if actual != manifest["records"]:
                 raise ValueError("Catalog records do not match manifest")
+            indexed = [
+                tuple(row)
+                for row in db.execute("SELECT id,name,description,tags FROM search ORDER BY id")
+            ]
+            expected = [
+                (r["id"], r["name"], r["description"], " ".join(r["tags"]))
+                for r in manifest["records"]
+            ]
+            if indexed != expected:
+                raise ValueError("Search index does not match catalog records")
 
     def activate(self, snapshot: str) -> None:
         self.validate(snapshot)

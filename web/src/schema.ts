@@ -256,6 +256,75 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/configurations': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Configurations */
+    post: operations['configurations_api_v1_configurations_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/versions/activate': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Activate Versions */
+    post: operations['activate_versions_api_v1_versions_activate_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/backups': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Backups */
+    get: operations['backups_api_v1_backups_get'];
+    put?: never;
+    /** Create Backup */
+    post: operations['create_backup_api_v1_backups_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/backups/{identifier}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Verify Backup */
+    get: operations['verify_backup_api_v1_backups__identifier__get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/versions/diff': {
     parameters: {
       query?: never;
@@ -277,6 +346,13 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** ActivationRequest */
+    ActivationRequest: {
+      /** Snapshot */
+      snapshot: string;
+      /** Configuration */
+      configuration: string;
+    };
     /** CaseResult */
     CaseResult: {
       /** Id */
@@ -323,6 +399,58 @@ export interface components {
       ids: string[];
       /** Snapshot */
       snapshot?: string | null;
+    };
+    /** Configuration */
+    Configuration: {
+      /**
+       * Schema Version
+       * @default 1
+       * @constant
+       */
+      schema_version: 1;
+      /**
+       * Name
+       * @default Balanced
+       */
+      name: string;
+      /**
+       * Version
+       * @default 1.0.0
+       */
+      version: string;
+      /**
+       * Algorithm
+       * @default bm25-evidence-v1
+       * @constant
+       */
+      algorithm: 'bm25-evidence-v1';
+      /**
+       * Name Weight
+       * @default 5
+       */
+      name_weight: number;
+      /**
+       * Description Weight
+       * @default 1
+       */
+      description_weight: number;
+      /**
+       * Tags Weight
+       * @default 2
+       */
+      tags_weight: number;
+      /**
+       * Prompt Version
+       * @default evidence-order-v1
+       * @constant
+       */
+      prompt_version: 'evidence-order-v1';
+      /**
+       * Model Profiles Version
+       * @default profiles-v1
+       * @constant
+       */
+      model_profiles_version: 'profiles-v1';
     };
     /** EvaluationReport */
     EvaluationReport: {
@@ -462,6 +590,8 @@ export interface components {
       filters?: components['schemas']['Filters'];
       /** Snapshot */
       snapshot?: string | null;
+      /** Configuration */
+      configuration?: string | null;
       /**
        * Limit
        * @default 20
@@ -507,6 +637,21 @@ export interface components {
       application_version: string;
       /** Snapshot */
       snapshot: string;
+      /**
+       * Configuration
+       * @default
+       */
+      configuration: string;
+      /**
+       * Prompt Version
+       * @default evidence-order-v1
+       */
+      prompt_version: string;
+      /**
+       * Model Profiles Version
+       * @default profiles-v1
+       */
+      model_profiles_version: string;
       /** As Of */
       as_of: string;
       /**
@@ -1129,6 +1274,151 @@ export interface operations {
           'application/json': {
             [key: string]: unknown;
           };
+        };
+      };
+    };
+  };
+  configurations_api_v1_configurations_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['Configuration'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: string;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  activate_versions_api_v1_versions_activate_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ActivationRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: string;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  backups_api_v1_backups_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': string[];
+        };
+      };
+    };
+  };
+  create_backup_api_v1_backups_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: unknown;
+          };
+        };
+      };
+    };
+  };
+  verify_backup_api_v1_backups__identifier__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        identifier: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
     };

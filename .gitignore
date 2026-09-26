@@ -27,3 +27,4 @@ web/playwright-report/
 Thumbs.db
 mutants/
 .mutmut-cache
+coverage.json

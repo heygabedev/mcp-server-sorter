@@ -1,5 +1,6 @@
 import json
 import socket
+from datetime import datetime
 
 import pytest
 from fastapi.testclient import TestClient
@@ -118,3 +119,56 @@ def test_api_and_cli_match_without_external_connections(tmp_path, monkeypatch):
 def test_unseeded_live_app_readiness(tmp_path):
     with TestClient(create_app(Settings(mode="live", data_dir=tmp_path))) as http:
         assert http.get("/health/ready").status_code == 503
+
+
+def test_sql_order_preserves_evidence_freshness_and_id_ties(runtime):
+    original = runtime.catalog.records()[0]
+    records = [
+        original.model_copy(
+            update={
+                "id": identifier,
+                "status": "active",
+                "name": "Equal",
+                "description": "Equal",
+                "updated_at": datetime.fromisoformat(updated),
+                "evidence": evidence,
+            }
+        )
+        for identifier, updated, evidence in [
+            ("tie/b", "2026-09-03T00:00:00+00:00", original.evidence),
+            ("tie/a", "2026-09-02T00:00:00+00:00", original.evidence),
+            ("tie/old", "2026-08-01T00:00:00+00:00", original.evidence),
+            ("tie/proof", "2025-01-01T00:00:00+00:00", (*original.evidence, original.evidence[0])),
+        ]
+    ]
+    snapshot = runtime.catalog.publish(records, "2026-09-01T00:00:00Z")
+    for query in ("", "Equal"):
+        result = rank(runtime.catalog, RankRequest(query=query, snapshot=snapshot))
+        assert [r.server.id for r in result.results] == ["tie/proof", "tie/a", "tie/b", "tie/old"]
+    assert runtime.catalog.publish(list(reversed(records)), "2026-09-01T00:00:00Z") == snapshot
+
+
+def test_filters_apply_before_result_limit(runtime):
+    original = runtime.catalog.records()[0]
+    records = [
+        original.model_copy(
+            update={
+                "id": f"filtered/{index:03}",
+                "status": "active",
+                "name": "Equal",
+                "auth": "none" if index == 60 else "oauth",
+            }
+        )
+        for index in range(61)
+    ]
+    snapshot = runtime.catalog.publish(records, "2026-09-01T00:00:00Z")
+    result = rank(
+        runtime.catalog,
+        RankRequest(
+            query="Equal",
+            snapshot=snapshot,
+            limit=1,
+            filters=Filters(auth="none"),
+        ),
+    )
+    assert [r.server.id for r in result.results] == ["filtered/060"]

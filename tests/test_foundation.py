@@ -46,7 +46,6 @@ def test_live_network_policy_rejects_unsafe_urls(url):
         authorize_url(url, Settings(mode="live", allowed_hosts=("example.com",)))
 
 
-@pytest.mark.enable_socket
 def test_health_and_host_validation(tmp_path):
     with TestClient(create_app(Settings(data_dir=tmp_path))) as http:
         assert http.get("/health/live").json()["mode"] == "demo"
@@ -67,7 +66,6 @@ def test_serve_binds_only_loopback(monkeypatch):
     assert calls[0]["host"] == "127.0.0.1"
 
 
-@pytest.mark.enable_socket
 def test_telemetry_does_not_log_query_or_credentials(tmp_path, caplog):
     with (
         caplog.at_level("INFO", logger="mcp_sorter.requests"),

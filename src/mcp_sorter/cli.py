@@ -34,6 +34,29 @@ def version() -> None:
     typer.echo(__version__)
 
 
+@app.command("mcp")
+def serve_mcp() -> None:
+    """Expose read-only local search and comparison tools over stdio."""
+    from mcp_sorter.mcp_server import create_mcp
+
+    runtime = Runtime(Settings())
+    try:
+        create_mcp(runtime).run(transport="stdio")
+    finally:
+        runtime.close()
+
+
+@app.command("probe")
+def probe_endpoint(endpoint: str) -> None:
+    """Initialize and list capabilities at an explicitly approved HTTPS endpoint."""
+    from mcp_sorter.probes import probe
+
+    try:
+        typer.echo(probe(Settings(), endpoint).model_dump_json(indent=2))
+    except (ValueError, OSError) as exc:
+        raise typer.BadParameter(str(exc)) from exc
+
+
 @app.command()
 def serve(port: int = 8000) -> None:
     """Serve the application on the loopback interface."""

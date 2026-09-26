@@ -1,3 +1,5 @@
+import ipaddress
+import socket
 from urllib.parse import urlsplit
 
 import httpx
@@ -24,14 +26,35 @@ def authorize_url(url: str, settings: Settings) -> None:
 class GuardedTransport(httpx.BaseTransport):
     def __init__(self, settings: Settings, inner: httpx.BaseTransport | None = None) -> None:
         self.settings = settings
+        self.pin_addresses = inner is None
         self.inner = inner or httpx.HTTPTransport(retries=0)
 
     def handle_request(self, request: httpx.Request) -> httpx.Response:
         authorize_url(str(request.url), self.settings)
+        if self.pin_addresses:
+            request = pin_public_destination(request)
         return self.inner.handle_request(request)
 
     def close(self) -> None:
         self.inner.close()
+
+
+def pin_public_destination(request: httpx.Request) -> httpx.Request:
+    hostname = request.url.host
+    answers = socket.getaddrinfo(hostname, 443, type=socket.SOCK_STREAM)
+    addresses = sorted({str(answer[4][0]) for answer in answers})
+    if not addresses or any(not ipaddress.ip_address(ip).is_global for ip in addresses):
+        raise NetworkDenied("The destination must resolve exclusively to public addresses")
+    # Connect to the inspected address while verifying TLS against the original hostname.
+    headers = request.headers.copy()
+    headers["host"] = hostname
+    return httpx.Request(
+        request.method,
+        request.url.copy_with(host=addresses[0]),
+        headers=headers,
+        stream=request.stream,
+        extensions={**request.extensions, "sni_hostname": hostname},
+    )
 
 
 def client(settings: Settings, transport: httpx.BaseTransport | None = None) -> httpx.Client:

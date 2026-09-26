@@ -1,0 +1,213 @@
+{
+  "notice": "Fixture regression results. Live model quality is unmeasured.",
+  "source_sha256": "089a9882c98c09c0aa16e25cc344235c22a79034aea833d508190405c0ce7e36",
+  "dataset_sha256": "07c2314b4595935ddf63d88b5649cdd912442c5731881eed419bd66d6743ded8",
+  "snapshot": "943ade094ce587eafb0cb2ba49a97e52934f23eab30e586593428a2af4592a97",
+  "configuration": "d60c0761632995bf552da3c5a351dbfde9badba982db3e136772c9f198d3675e",
+  "cases": 90,
+  "profiles": [
+    {
+      "profile": "baseline",
+      "summary": {
+        "ndcg_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "reciprocal_rank": 1.0,
+        "constraint_violations": 0.0,
+        "invalid_evidence_references": 0.0,
+        "abstention_accuracy": 1.0,
+        "expected_top_accuracy": 1.0,
+        "fallback_rate": 0.0,
+        "mean_latency_ms": 1.9954788876930252,
+        "p95_latency_ms": 2.9551999759860337,
+        "abstention_rate": 0.3333333333333333,
+        "cost_usd": 0.0,
+        "schema_failure_rate": 0.0,
+        "unsupported_claim_rate": 0.0
+      },
+      "comparison": {
+        "ndcg_delta": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "passes_regression_gate": true,
+        "bootstrap_unit": "intent",
+        "mode": "fixture"
+      }
+    },
+    {
+      "profile": "demo-balanced",
+      "summary": {
+        "ndcg_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "reciprocal_rank": 1.0,
+        "constraint_violations": 0.0,
+        "invalid_evidence_references": 0.0,
+        "abstention_accuracy": 1.0,
+        "expected_top_accuracy": 1.0,
+        "fallback_rate": 0.0,
+        "mean_latency_ms": 2.4613244449331737,
+        "p95_latency_ms": 3.7671000172849745,
+        "abstention_rate": 0.3333333333333333,
+        "cost_usd": 0.0,
+        "schema_failure_rate": 0.0,
+        "unsupported_claim_rate": 0.0
+      },
+      "comparison": {
+        "ndcg_delta": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "passes_regression_gate": true,
+        "bootstrap_unit": "intent",
+        "mode": "fixture"
+      }
+    },
+    {
+      "profile": "demo-fast",
+      "summary": {
+        "ndcg_at_5": 0.9692441461309548,
+        "recall_at_10": 1.0,
+        "reciprocal_rank": 0.9583333333333334,
+        "constraint_violations": 0.0,
+        "invalid_evidence_references": 0.0,
+        "abstention_accuracy": 1.0,
+        "expected_top_accuracy": 0.9444444444444444,
+        "fallback_rate": 0.0,
+        "mean_latency_ms": 2.083757775188941,
+        "p95_latency_ms": 3.3136999991256744,
+        "abstention_rate": 0.3333333333333333,
+        "cost_usd": 0.0,
+        "schema_failure_rate": 0.0,
+        "unsupported_claim_rate": 0.0
+      },
+      "comparison": {
+        "ndcg_delta": -0.030755853869045207,
+        "ci95": [
+          -0.06766287851189946,
+          -0.006151170773809041
+        ],
+        "passes_regression_gate": false,
+        "bootstrap_unit": "intent",
+        "mode": "fixture"
+      }
+    },
+    {
+      "profile": "demo-timeout",
+      "summary": {
+        "ndcg_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "reciprocal_rank": 1.0,
+        "constraint_violations": 0.0,
+        "invalid_evidence_references": 0.0,
+        "abstention_accuracy": 1.0,
+        "expected_top_accuracy": 1.0,
+        "fallback_rate": 0.6666666666666666,
+        "mean_latency_ms": 6.386636663875025,
+        "p95_latency_ms": 10.00370000838302,
+        "abstention_rate": 0.3333333333333333,
+        "cost_usd": 0.0,
+        "schema_failure_rate": 0.0,
+        "unsupported_claim_rate": 0.0
+      },
+      "comparison": {
+        "ndcg_delta": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "passes_regression_gate": true,
+        "bootstrap_unit": "intent",
+        "mode": "fixture"
+      }
+    },
+    {
+      "profile": "demo-malformed",
+      "summary": {
+        "ndcg_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "reciprocal_rank": 1.0,
+        "constraint_violations": 0.0,
+        "invalid_evidence_references": 0.0,
+        "abstention_accuracy": 1.0,
+        "expected_top_accuracy": 1.0,
+        "fallback_rate": 0.6666666666666666,
+        "mean_latency_ms": 6.5252711116853686,
+        "p95_latency_ms": 10.63040000735782,
+        "abstention_rate": 0.3333333333333333,
+        "cost_usd": 0.0,
+        "schema_failure_rate": 0.6666666666666666,
+        "unsupported_claim_rate": 0.0
+      },
+      "comparison": {
+        "ndcg_delta": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "passes_regression_gate": true,
+        "bootstrap_unit": "intent",
+        "mode": "fixture"
+      }
+    },
+    {
+      "profile": "demo-rate-limited",
+      "summary": {
+        "ndcg_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "reciprocal_rank": 1.0,
+        "constraint_violations": 0.0,
+        "invalid_evidence_references": 0.0,
+        "abstention_accuracy": 1.0,
+        "expected_top_accuracy": 1.0,
+        "fallback_rate": 0.6666666666666666,
+        "mean_latency_ms": 5.700054443635357,
+        "p95_latency_ms": 8.610499993665144,
+        "abstention_rate": 0.3333333333333333,
+        "cost_usd": 0.0,
+        "schema_failure_rate": 0.0,
+        "unsupported_claim_rate": 0.0
+      },
+      "comparison": {
+        "ndcg_delta": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "passes_regression_gate": true,
+        "bootstrap_unit": "intent",
+        "mode": "fixture"
+      }
+    },
+    {
+      "profile": "demo-unavailable",
+      "summary": {
+        "ndcg_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "reciprocal_rank": 1.0,
+        "constraint_violations": 0.0,
+        "invalid_evidence_references": 0.0,
+        "abstention_accuracy": 1.0,
+        "expected_top_accuracy": 1.0,
+        "fallback_rate": 0.6666666666666666,
+        "mean_latency_ms": 6.061984444386326,
+        "p95_latency_ms": 9.55940000130795,
+        "abstention_rate": 0.3333333333333333,
+        "cost_usd": 0.0,
+        "schema_failure_rate": 0.0,
+        "unsupported_claim_rate": 0.0
+      },
+      "comparison": {
+        "ndcg_delta": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "passes_regression_gate": true,
+        "bootstrap_unit": "intent",
+        "mode": "fixture"
+      }
+    }
+  ]
+}

@@ -42,6 +42,18 @@ MUTATIONS = [
     ("evaluation", 'after["abstention_accuracy"] != 1', "False", "Ignore incorrect abstentions"),
     (
         "evaluation",
+        "    render_saved_report(directory, report.id)",
+        "    pass",
+        "Skip initial report rendering",
+    ),
+    (
+        "jobs",
+        'if path.exists():\n            render_saved_report(runtime.settings.data_dir, job["id"])',
+        "if path.exists():\n            pass",
+        "Skip report repair after restart",
+    ),
+    (
+        "evaluation",
         "for split in sorted({c.split for c in candidate.cases}):",
         "for split in []:",
         "Skip split regression gates",
@@ -73,7 +85,10 @@ def run_tests(directory, modules):
             "-q",
             "--tb=short",
             "--disable-warnings",
-            *[f"tests/test_{module}.py" for module in sorted(modules)],
+            *[
+                f"tests/test_{'operations' if module == 'jobs' else module}.py"
+                for module in sorted(modules)
+            ],
         ],
         cwd=directory,
         env={**os.environ, "PYTHONPATH": str(directory / "src"), "PYTHONDONTWRITEBYTECODE": "1"},

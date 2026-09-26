@@ -1,0 +1,14 @@
+{
+  "version": "0.1.1",
+  "source_commit": "5a0c5d6",
+  "python_tests": {"windows": 134, "linux": 134, "api_subtests_each": 24},
+  "branch_coverage_percent": {"overall": 95.28, "evaluation": 96.55, "ranking": 100.0, "recovery": 95.24},
+  "component_tests": 17,
+  "chromium_journeys": 3,
+  "checks": ["ruff", "formatting", "mypy", "OpenAPI drift", "TypeScript", "Vite", "ESLint", "Prettier", "axe"],
+  "installation": "Offline Windows and Linux installation, packaged UI, upgrade from the published v0.1.0 wheel and rollback passed; see wheel reports for artifact hashes.",
+  "container": "Not verified: Docker Desktop startup failed and automatic approval review blocked runtime-file repair.",
+  "macos": "Not rerun for this version.",
+  "github_actions": "Disabled at the owner's request. Results are local, not hosted CI.",
+  "benchmark": "Not rerun for this patch. Previously published results describe v0.1.0."
+}

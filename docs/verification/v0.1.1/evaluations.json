@@ -1,0 +1,695 @@
+{
+  "notice": "Fixture regression results. Live model quality is unmeasured.",
+  "source_sha256": "35bd0d38c8418cb79084b89f2782cf57ad24710b964b006f767087626e15e02f",
+  "dataset_sha256": "07c2314b4595935ddf63d88b5649cdd912442c5731881eed419bd66d6743ded8",
+  "snapshot": "943ade094ce587eafb0cb2ba49a97e52934f23eab30e586593428a2af4592a97",
+  "configuration": "d60c0761632995bf552da3c5a351dbfde9badba982db3e136772c9f198d3675e",
+  "cases": 90,
+  "profiles": [
+    {
+      "profile": "baseline",
+      "summary": {
+        "ndcg_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "reciprocal_rank": 1.0,
+        "constraint_violations": 0.0,
+        "invalid_evidence_references": 0.0,
+        "abstention_accuracy": 1.0,
+        "expected_top_accuracy": 1.0,
+        "fallback_rate": 0.0,
+        "mean_latency_ms": 1.9810433324892074,
+        "p95_latency_ms": 2.4130000092554837,
+        "abstention_rate": 0.3333333333333333,
+        "cost_usd": 0.0,
+        "schema_failure_rate": 0.0,
+        "unsupported_claim_rate": 0.0
+      },
+      "comparison": {
+        "ndcg_delta": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "passes_regression_gate": true,
+        "gate_policy_version": "fixture-regression-v2",
+        "failures": [],
+        "slices": {
+          "overall": {
+            "ndcg_delta": 0.0,
+            "summary": {
+              "ndcg_at_5": 1.0,
+              "recall_at_10": 1.0,
+              "reciprocal_rank": 1.0,
+              "constraint_violations": 0.0,
+              "invalid_evidence_references": 0.0,
+              "abstention_accuracy": 1.0,
+              "expected_top_accuracy": 1.0,
+              "fallback_rate": 0.0,
+              "mean_latency_ms": 1.9810433324892074,
+              "p95_latency_ms": 2.4130000092554837,
+              "abstention_rate": 0.3333333333333333,
+              "cost_usd": 0.0,
+              "schema_failure_rate": 0.0,
+              "unsupported_claim_rate": 0.0
+            },
+            "failures": [],
+            "passed": true
+          },
+          "development": {
+            "ndcg_delta": 0.0,
+            "summary": {
+              "ndcg_at_5": 1.0,
+              "recall_at_10": 1.0,
+              "reciprocal_rank": 1.0,
+              "constraint_violations": 0.0,
+              "invalid_evidence_references": 0.0,
+              "abstention_accuracy": 1.0,
+              "expected_top_accuracy": 1.0,
+              "fallback_rate": 0.0,
+              "mean_latency_ms": 2.1120866644196212,
+              "p95_latency_ms": 2.658900019014254,
+              "abstention_rate": 0.3333333333333333,
+              "cost_usd": 0.0,
+              "schema_failure_rate": 0.0,
+              "unsupported_claim_rate": 0.0
+            },
+            "failures": [],
+            "passed": true
+          },
+          "heldout": {
+            "ndcg_delta": 0.0,
+            "summary": {
+              "ndcg_at_5": 1.0,
+              "recall_at_10": 1.0,
+              "reciprocal_rank": 1.0,
+              "constraint_violations": 0.0,
+              "invalid_evidence_references": 0.0,
+              "abstention_accuracy": 1.0,
+              "expected_top_accuracy": 1.0,
+              "fallback_rate": 0.0,
+              "mean_latency_ms": 1.9155216665240005,
+              "p95_latency_ms": 2.1720000077039003,
+              "abstention_rate": 0.3333333333333333,
+              "cost_usd": 0.0,
+              "schema_failure_rate": 0.0,
+              "unsupported_claim_rate": 0.0
+            },
+            "failures": [],
+            "passed": true
+          }
+        },
+        "bootstrap_unit": "intent",
+        "mode": "fixture"
+      }
+    },
+    {
+      "profile": "demo-balanced",
+      "summary": {
+        "ndcg_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "reciprocal_rank": 1.0,
+        "constraint_violations": 0.0,
+        "invalid_evidence_references": 0.0,
+        "abstention_accuracy": 1.0,
+        "expected_top_accuracy": 1.0,
+        "fallback_rate": 0.0,
+        "mean_latency_ms": 2.336023333029718,
+        "p95_latency_ms": 3.063599986489862,
+        "abstention_rate": 0.3333333333333333,
+        "cost_usd": 0.0,
+        "schema_failure_rate": 0.0,
+        "unsupported_claim_rate": 0.0
+      },
+      "comparison": {
+        "ndcg_delta": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "passes_regression_gate": true,
+        "gate_policy_version": "fixture-regression-v2",
+        "failures": [],
+        "slices": {
+          "overall": {
+            "ndcg_delta": 0.0,
+            "summary": {
+              "ndcg_at_5": 1.0,
+              "recall_at_10": 1.0,
+              "reciprocal_rank": 1.0,
+              "constraint_violations": 0.0,
+              "invalid_evidence_references": 0.0,
+              "abstention_accuracy": 1.0,
+              "expected_top_accuracy": 1.0,
+              "fallback_rate": 0.0,
+              "mean_latency_ms": 2.336023333029718,
+              "p95_latency_ms": 3.063599986489862,
+              "abstention_rate": 0.3333333333333333,
+              "cost_usd": 0.0,
+              "schema_failure_rate": 0.0,
+              "unsupported_claim_rate": 0.0
+            },
+            "failures": [],
+            "passed": true
+          },
+          "development": {
+            "ndcg_delta": 0.0,
+            "summary": {
+              "ndcg_at_5": 1.0,
+              "recall_at_10": 1.0,
+              "reciprocal_rank": 1.0,
+              "constraint_violations": 0.0,
+              "invalid_evidence_references": 0.0,
+              "abstention_accuracy": 1.0,
+              "expected_top_accuracy": 1.0,
+              "fallback_rate": 0.0,
+              "mean_latency_ms": 2.3799366666935384,
+              "p95_latency_ms": 3.2568000024184585,
+              "abstention_rate": 0.3333333333333333,
+              "cost_usd": 0.0,
+              "schema_failure_rate": 0.0,
+              "unsupported_claim_rate": 0.0
+            },
+            "failures": [],
+            "passed": true
+          },
+          "heldout": {
+            "ndcg_delta": 0.0,
+            "summary": {
+              "ndcg_at_5": 1.0,
+              "recall_at_10": 1.0,
+              "reciprocal_rank": 1.0,
+              "constraint_violations": 0.0,
+              "invalid_evidence_references": 0.0,
+              "abstention_accuracy": 1.0,
+              "expected_top_accuracy": 1.0,
+              "fallback_rate": 0.0,
+              "mean_latency_ms": 2.314066666197808,
+              "p95_latency_ms": 2.96770001295954,
+              "abstention_rate": 0.3333333333333333,
+              "cost_usd": 0.0,
+              "schema_failure_rate": 0.0,
+              "unsupported_claim_rate": 0.0
+            },
+            "failures": [],
+            "passed": true
+          }
+        },
+        "bootstrap_unit": "intent",
+        "mode": "fixture"
+      }
+    },
+    {
+      "profile": "demo-fast",
+      "summary": {
+        "ndcg_at_5": 0.9692441461309548,
+        "recall_at_10": 1.0,
+        "reciprocal_rank": 0.9583333333333334,
+        "constraint_violations": 0.0,
+        "invalid_evidence_references": 0.0,
+        "abstention_accuracy": 1.0,
+        "expected_top_accuracy": 0.9444444444444444,
+        "fallback_rate": 0.0,
+        "mean_latency_ms": 2.5419333335270897,
+        "p95_latency_ms": 3.448000003118068,
+        "abstention_rate": 0.3333333333333333,
+        "cost_usd": 0.0,
+        "schema_failure_rate": 0.0,
+        "unsupported_claim_rate": 0.0
+      },
+      "comparison": {
+        "ndcg_delta": -0.030755853869045207,
+        "ci95": [
+          -0.06766287851189946,
+          -0.006151170773809041
+        ],
+        "passes_regression_gate": false,
+        "gate_policy_version": "fixture-regression-v2",
+        "failures": [
+          {
+            "scope": "overall",
+            "code": "ndcg-regression"
+          },
+          {
+            "scope": "heldout",
+            "code": "ndcg-regression"
+          }
+        ],
+        "slices": {
+          "overall": {
+            "ndcg_delta": -0.030755853869045224,
+            "summary": {
+              "ndcg_at_5": 0.9692441461309548,
+              "recall_at_10": 1.0,
+              "reciprocal_rank": 0.9583333333333334,
+              "constraint_violations": 0.0,
+              "invalid_evidence_references": 0.0,
+              "abstention_accuracy": 1.0,
+              "expected_top_accuracy": 0.9444444444444444,
+              "fallback_rate": 0.0,
+              "mean_latency_ms": 2.5419333335270897,
+              "p95_latency_ms": 3.448000003118068,
+              "abstention_rate": 0.3333333333333333,
+              "cost_usd": 0.0,
+              "schema_failure_rate": 0.0,
+              "unsupported_claim_rate": 0.0
+            },
+            "failures": [
+              "ndcg-regression"
+            ],
+            "passed": false
+          },
+          "development": {
+            "ndcg_delta": 0.0,
+            "summary": {
+              "ndcg_at_5": 1.0,
+              "recall_at_10": 1.0,
+              "reciprocal_rank": 1.0,
+              "constraint_violations": 0.0,
+              "invalid_evidence_references": 0.0,
+              "abstention_accuracy": 1.0,
+              "expected_top_accuracy": 1.0,
+              "fallback_rate": 0.0,
+              "mean_latency_ms": 2.527323332227146,
+              "p95_latency_ms": 3.1223999976646155,
+              "abstention_rate": 0.3333333333333333,
+              "cost_usd": 0.0,
+              "schema_failure_rate": 0.0,
+              "unsupported_claim_rate": 0.0
+            },
+            "failures": [],
+            "passed": true
+          },
+          "heldout": {
+            "ndcg_delta": -0.04613378080356778,
+            "summary": {
+              "ndcg_at_5": 0.9538662191964322,
+              "recall_at_10": 1.0,
+              "reciprocal_rank": 0.9375,
+              "constraint_violations": 0.0,
+              "invalid_evidence_references": 0.0,
+              "abstention_accuracy": 1.0,
+              "expected_top_accuracy": 0.9166666666666666,
+              "fallback_rate": 0.0,
+              "mean_latency_ms": 2.549238334177062,
+              "p95_latency_ms": 3.448000003118068,
+              "abstention_rate": 0.3333333333333333,
+              "cost_usd": 0.0,
+              "schema_failure_rate": 0.0,
+              "unsupported_claim_rate": 0.0
+            },
+            "failures": [
+              "ndcg-regression"
+            ],
+            "passed": false
+          }
+        },
+        "bootstrap_unit": "intent",
+        "mode": "fixture"
+      }
+    },
+    {
+      "profile": "demo-timeout",
+      "summary": {
+        "ndcg_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "reciprocal_rank": 1.0,
+        "constraint_violations": 0.0,
+        "invalid_evidence_references": 0.0,
+        "abstention_accuracy": 1.0,
+        "expected_top_accuracy": 1.0,
+        "fallback_rate": 0.6666666666666666,
+        "mean_latency_ms": 6.0919366663761645,
+        "p95_latency_ms": 8.658899983856827,
+        "abstention_rate": 0.3333333333333333,
+        "cost_usd": 0.0,
+        "schema_failure_rate": 0.0,
+        "unsupported_claim_rate": 0.0
+      },
+      "comparison": {
+        "ndcg_delta": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "passes_regression_gate": true,
+        "gate_policy_version": "fixture-regression-v2",
+        "failures": [],
+        "slices": {
+          "overall": {
+            "ndcg_delta": 0.0,
+            "summary": {
+              "ndcg_at_5": 1.0,
+              "recall_at_10": 1.0,
+              "reciprocal_rank": 1.0,
+              "constraint_violations": 0.0,
+              "invalid_evidence_references": 0.0,
+              "abstention_accuracy": 1.0,
+              "expected_top_accuracy": 1.0,
+              "fallback_rate": 0.6666666666666666,
+              "mean_latency_ms": 6.0919366663761645,
+              "p95_latency_ms": 8.658899983856827,
+              "abstention_rate": 0.3333333333333333,
+              "cost_usd": 0.0,
+              "schema_failure_rate": 0.0,
+              "unsupported_claim_rate": 0.0
+            },
+            "failures": [],
+            "passed": true
+          },
+          "development": {
+            "ndcg_delta": 0.0,
+            "summary": {
+              "ndcg_at_5": 1.0,
+              "recall_at_10": 1.0,
+              "reciprocal_rank": 1.0,
+              "constraint_violations": 0.0,
+              "invalid_evidence_references": 0.0,
+              "abstention_accuracy": 1.0,
+              "expected_top_accuracy": 1.0,
+              "fallback_rate": 0.6666666666666666,
+              "mean_latency_ms": 6.170133336369569,
+              "p95_latency_ms": 9.109500009799376,
+              "abstention_rate": 0.3333333333333333,
+              "cost_usd": 0.0,
+              "schema_failure_rate": 0.0,
+              "unsupported_claim_rate": 0.0
+            },
+            "failures": [],
+            "passed": true
+          },
+          "heldout": {
+            "ndcg_delta": 0.0,
+            "summary": {
+              "ndcg_at_5": 1.0,
+              "recall_at_10": 1.0,
+              "reciprocal_rank": 1.0,
+              "constraint_violations": 0.0,
+              "invalid_evidence_references": 0.0,
+              "abstention_accuracy": 1.0,
+              "expected_top_accuracy": 1.0,
+              "fallback_rate": 0.6666666666666666,
+              "mean_latency_ms": 6.052838331379462,
+              "p95_latency_ms": 8.57400000677444,
+              "abstention_rate": 0.3333333333333333,
+              "cost_usd": 0.0,
+              "schema_failure_rate": 0.0,
+              "unsupported_claim_rate": 0.0
+            },
+            "failures": [],
+            "passed": true
+          }
+        },
+        "bootstrap_unit": "intent",
+        "mode": "fixture"
+      }
+    },
+    {
+      "profile": "demo-malformed",
+      "summary": {
+        "ndcg_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "reciprocal_rank": 1.0,
+        "constraint_violations": 0.0,
+        "invalid_evidence_references": 0.0,
+        "abstention_accuracy": 1.0,
+        "expected_top_accuracy": 1.0,
+        "fallback_rate": 0.6666666666666666,
+        "mean_latency_ms": 6.082926662444758,
+        "p95_latency_ms": 8.960899984231219,
+        "abstention_rate": 0.3333333333333333,
+        "cost_usd": 0.0,
+        "schema_failure_rate": 0.6666666666666666,
+        "unsupported_claim_rate": 0.0
+      },
+      "comparison": {
+        "ndcg_delta": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "passes_regression_gate": true,
+        "gate_policy_version": "fixture-regression-v2",
+        "failures": [],
+        "slices": {
+          "overall": {
+            "ndcg_delta": 0.0,
+            "summary": {
+              "ndcg_at_5": 1.0,
+              "recall_at_10": 1.0,
+              "reciprocal_rank": 1.0,
+              "constraint_violations": 0.0,
+              "invalid_evidence_references": 0.0,
+              "abstention_accuracy": 1.0,
+              "expected_top_accuracy": 1.0,
+              "fallback_rate": 0.6666666666666666,
+              "mean_latency_ms": 6.082926662444758,
+              "p95_latency_ms": 8.960899984231219,
+              "abstention_rate": 0.3333333333333333,
+              "cost_usd": 0.0,
+              "schema_failure_rate": 0.6666666666666666,
+              "unsupported_claim_rate": 0.0
+            },
+            "failures": [],
+            "passed": true
+          },
+          "development": {
+            "ndcg_delta": 0.0,
+            "summary": {
+              "ndcg_at_5": 1.0,
+              "recall_at_10": 1.0,
+              "reciprocal_rank": 1.0,
+              "constraint_violations": 0.0,
+              "invalid_evidence_references": 0.0,
+              "abstention_accuracy": 1.0,
+              "expected_top_accuracy": 1.0,
+              "fallback_rate": 0.6666666666666666,
+              "mean_latency_ms": 5.854196662160878,
+              "p95_latency_ms": 8.270899998024106,
+              "abstention_rate": 0.3333333333333333,
+              "cost_usd": 0.0,
+              "schema_failure_rate": 0.6666666666666666,
+              "unsupported_claim_rate": 0.0
+            },
+            "failures": [],
+            "passed": true
+          },
+          "heldout": {
+            "ndcg_delta": 0.0,
+            "summary": {
+              "ndcg_at_5": 1.0,
+              "recall_at_10": 1.0,
+              "reciprocal_rank": 1.0,
+              "constraint_violations": 0.0,
+              "invalid_evidence_references": 0.0,
+              "abstention_accuracy": 1.0,
+              "expected_top_accuracy": 1.0,
+              "fallback_rate": 0.6666666666666666,
+              "mean_latency_ms": 6.197291662586697,
+              "p95_latency_ms": 8.994000003440306,
+              "abstention_rate": 0.3333333333333333,
+              "cost_usd": 0.0,
+              "schema_failure_rate": 0.6666666666666666,
+              "unsupported_claim_rate": 0.0
+            },
+            "failures": [],
+            "passed": true
+          }
+        },
+        "bootstrap_unit": "intent",
+        "mode": "fixture"
+      }
+    },
+    {
+      "profile": "demo-rate-limited",
+      "summary": {
+        "ndcg_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "reciprocal_rank": 1.0,
+        "constraint_violations": 0.0,
+        "invalid_evidence_references": 0.0,
+        "abstention_accuracy": 1.0,
+        "expected_top_accuracy": 1.0,
+        "fallback_rate": 0.6666666666666666,
+        "mean_latency_ms": 6.164149997574794,
+        "p95_latency_ms": 8.888699987437576,
+        "abstention_rate": 0.3333333333333333,
+        "cost_usd": 0.0,
+        "schema_failure_rate": 0.0,
+        "unsupported_claim_rate": 0.0
+      },
+      "comparison": {
+        "ndcg_delta": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "passes_regression_gate": true,
+        "gate_policy_version": "fixture-regression-v2",
+        "failures": [],
+        "slices": {
+          "overall": {
+            "ndcg_delta": 0.0,
+            "summary": {
+              "ndcg_at_5": 1.0,
+              "recall_at_10": 1.0,
+              "reciprocal_rank": 1.0,
+              "constraint_violations": 0.0,
+              "invalid_evidence_references": 0.0,
+              "abstention_accuracy": 1.0,
+              "expected_top_accuracy": 1.0,
+              "fallback_rate": 0.6666666666666666,
+              "mean_latency_ms": 6.164149997574794,
+              "p95_latency_ms": 8.888699987437576,
+              "abstention_rate": 0.3333333333333333,
+              "cost_usd": 0.0,
+              "schema_failure_rate": 0.0,
+              "unsupported_claim_rate": 0.0
+            },
+            "failures": [],
+            "passed": true
+          },
+          "development": {
+            "ndcg_delta": 0.0,
+            "summary": {
+              "ndcg_at_5": 1.0,
+              "recall_at_10": 1.0,
+              "reciprocal_rank": 1.0,
+              "constraint_violations": 0.0,
+              "invalid_evidence_references": 0.0,
+              "abstention_accuracy": 1.0,
+              "expected_top_accuracy": 1.0,
+              "fallback_rate": 0.6666666666666666,
+              "mean_latency_ms": 6.24717333218238,
+              "p95_latency_ms": 9.143799979938194,
+              "abstention_rate": 0.3333333333333333,
+              "cost_usd": 0.0,
+              "schema_failure_rate": 0.0,
+              "unsupported_claim_rate": 0.0
+            },
+            "failures": [],
+            "passed": true
+          },
+          "heldout": {
+            "ndcg_delta": 0.0,
+            "summary": {
+              "ndcg_at_5": 1.0,
+              "recall_at_10": 1.0,
+              "reciprocal_rank": 1.0,
+              "constraint_violations": 0.0,
+              "invalid_evidence_references": 0.0,
+              "abstention_accuracy": 1.0,
+              "expected_top_accuracy": 1.0,
+              "fallback_rate": 0.6666666666666666,
+              "mean_latency_ms": 6.122638330271002,
+              "p95_latency_ms": 8.678199985297397,
+              "abstention_rate": 0.3333333333333333,
+              "cost_usd": 0.0,
+              "schema_failure_rate": 0.0,
+              "unsupported_claim_rate": 0.0
+            },
+            "failures": [],
+            "passed": true
+          }
+        },
+        "bootstrap_unit": "intent",
+        "mode": "fixture"
+      }
+    },
+    {
+      "profile": "demo-unavailable",
+      "summary": {
+        "ndcg_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "reciprocal_rank": 1.0,
+        "constraint_violations": 0.0,
+        "invalid_evidence_references": 0.0,
+        "abstention_accuracy": 1.0,
+        "expected_top_accuracy": 1.0,
+        "fallback_rate": 0.6666666666666666,
+        "mean_latency_ms": 6.326895554795758,
+        "p95_latency_ms": 9.194999991450459,
+        "abstention_rate": 0.3333333333333333,
+        "cost_usd": 0.0,
+        "schema_failure_rate": 0.0,
+        "unsupported_claim_rate": 0.0
+      },
+      "comparison": {
+        "ndcg_delta": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "passes_regression_gate": true,
+        "gate_policy_version": "fixture-regression-v2",
+        "failures": [],
+        "slices": {
+          "overall": {
+            "ndcg_delta": 0.0,
+            "summary": {
+              "ndcg_at_5": 1.0,
+              "recall_at_10": 1.0,
+              "reciprocal_rank": 1.0,
+              "constraint_violations": 0.0,
+              "invalid_evidence_references": 0.0,
+              "abstention_accuracy": 1.0,
+              "expected_top_accuracy": 1.0,
+              "fallback_rate": 0.6666666666666666,
+              "mean_latency_ms": 6.326895554795758,
+              "p95_latency_ms": 9.194999991450459,
+              "abstention_rate": 0.3333333333333333,
+              "cost_usd": 0.0,
+              "schema_failure_rate": 0.0,
+              "unsupported_claim_rate": 0.0
+            },
+            "failures": [],
+            "passed": true
+          },
+          "development": {
+            "ndcg_delta": 0.0,
+            "summary": {
+              "ndcg_at_5": 1.0,
+              "recall_at_10": 1.0,
+              "reciprocal_rank": 1.0,
+              "constraint_violations": 0.0,
+              "invalid_evidence_references": 0.0,
+              "abstention_accuracy": 1.0,
+              "expected_top_accuracy": 1.0,
+              "fallback_rate": 0.6666666666666666,
+              "mean_latency_ms": 6.355373335342544,
+              "p95_latency_ms": 9.61259999894537,
+              "abstention_rate": 0.3333333333333333,
+              "cost_usd": 0.0,
+              "schema_failure_rate": 0.0,
+              "unsupported_claim_rate": 0.0
+            },
+            "failures": [],
+            "passed": true
+          },
+          "heldout": {
+            "ndcg_delta": 0.0,
+            "summary": {
+              "ndcg_at_5": 1.0,
+              "recall_at_10": 1.0,
+              "reciprocal_rank": 1.0,
+              "constraint_violations": 0.0,
+              "invalid_evidence_references": 0.0,
+              "abstention_accuracy": 1.0,
+              "expected_top_accuracy": 1.0,
+              "fallback_rate": 0.6666666666666666,
+              "mean_latency_ms": 6.312656664522365,
+              "p95_latency_ms": 8.771699998760596,
+              "abstention_rate": 0.3333333333333333,
+              "cost_usd": 0.0,
+              "schema_failure_rate": 0.0,
+              "unsupported_claim_rate": 0.0
+            },
+            "failures": [],
+            "passed": true
+          }
+        },
+        "bootstrap_unit": "intent",
+        "mode": "fixture"
+      }
+    }
+  ]
+}

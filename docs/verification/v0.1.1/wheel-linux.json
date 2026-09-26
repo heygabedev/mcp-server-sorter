@@ -1,0 +1,17 @@
+{
+  "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+  "python": "3.13.1",
+  "installed_versions": [
+    "0.1.0",
+    "0.1.1"
+  ],
+  "rollback": "passed",
+  "packaged_ui": "passed",
+  "offline_install": "passed",
+  "query_redaction": "passed",
+  "snapshot_preserved": "943ade094ce587eafb0cb2ba49a97e52934f23eab30e586593428a2af4592a97",
+  "artifacts": [
+    "650e6b11f3f9e14137717ce103116de361f37d8f8b743264e419de548255b631",
+    "506367c96c71752923489e98801a24615b970e549c2fc34e2ceecccedd96c3ca"
+  ]
+}

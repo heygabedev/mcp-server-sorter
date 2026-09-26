@@ -9,7 +9,11 @@ interface Versions {
   configurations: Record<string, { name: string; version: string; name_weight: number }>;
 }
 
-export default function VersionsView() {
+export default function VersionsView({
+  onCatalogChanged,
+}: {
+  onCatalogChanged: () => Promise<void>;
+}) {
   const [versions, setVersions] = useState<Versions | null>(null);
   const [snapshot, setSnapshot] = useState('');
   const [configuration, setConfiguration] = useState('');
@@ -134,6 +138,7 @@ export default function VersionsView() {
                   void action(async () => {
                     await api('/versions/activate', { snapshot, configuration });
                     await reload();
+                    await onCatalogChanged();
                     setNotice(
                       'Catalog and configuration activated together. Collections preserved.',
                     );

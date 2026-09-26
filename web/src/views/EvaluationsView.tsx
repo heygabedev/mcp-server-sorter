@@ -1,10 +1,11 @@
 import { ArrowDownToLine, ArrowRight, ChevronRight } from 'lucide-react';
 import { api, download } from '../api';
 import { useState } from 'react';
-import type { Profile, Report } from '../api';
+import type { Profile, Report, WorkspaceInfo } from '../api';
 import { profiles } from '../profiles';
 import PageTitle from './PageTitle';
 interface Props {
+  dataset: WorkspaceInfo['evaluation_dataset'] | null;
   profile: Profile;
   setProfile: (profile: Profile) => void;
   busy: boolean;
@@ -14,6 +15,7 @@ interface Props {
   setReport: (report: Report) => void;
 }
 export default function EvaluationsView({
+  dataset,
   profile,
   setProfile,
   busy,
@@ -22,6 +24,14 @@ export default function EvaluationsView({
   reports,
   setReport,
 }: Props) {
+  const total = report?.cases.length ?? dataset?.total;
+  const development = report
+    ? report.cases.filter((item) => item.split === 'development').length
+    : dataset?.development;
+  const heldout = report
+    ? report.cases.filter((item) => item.split === 'heldout').length
+    : dataset?.heldout;
+  const cost = report?.summary.cost_usd;
   const [baseline, setBaseline] = useState('');
   const [comparison, setComparison] = useState('');
   async function compare() {
@@ -48,16 +58,18 @@ export default function EvaluationsView({
       />
       <div className="evaluation-intro">
         <div className="stat">
-          <strong>90</strong>
+          <strong>{total ?? '—'}</strong>
           <span>golden cases</span>
         </div>
         <div className="stat">
-          <strong>30 / 60</strong>
+          <strong>
+            {development ?? '—'} / {heldout ?? '—'}
+          </strong>
           <span>development / held-out</span>
         </div>
         <div className="stat">
-          <strong>$0</strong>
-          <span>external model spend</span>
+          <strong>{cost == null ? 'Not reported' : `$${cost.toFixed(2)}`}</strong>
+          <span>reported model cost</span>
         </div>
         <div className="eval-actions">
           <select
@@ -72,7 +84,7 @@ export default function EvaluationsView({
             ))}
           </select>
           <button className="primary" disabled={busy} onClick={() => void runEvaluation()}>
-            {busy ? 'Running 90 cases…' : 'Run evaluation'}
+            {busy ? `Running ${dataset?.total ?? ''} cases…` : 'Run evaluation'}
             <ArrowRight size={16} />
           </button>
         </div>

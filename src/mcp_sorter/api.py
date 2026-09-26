@@ -1,7 +1,7 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
@@ -13,7 +13,8 @@ from starlette.responses import JSONResponse
 from starlette.routing import Route
 
 from mcp_sorter import __version__
-from mcp_sorter.evaluation import EvaluationReport, evaluate, report_path, save_report
+from mcp_sorter.catalog import CatalogSummary
+from mcp_sorter.evaluation import EvaluationReport, evaluate, load_golden, report_path, save_report
 from mcp_sorter.gateways import rank_with_profile
 from mcp_sorter.http_limits import BodyLimit
 from mcp_sorter.jobs import Worker
@@ -32,12 +33,27 @@ from mcp_sorter.selections import (
     save_selection,
 )
 from mcp_sorter.settings import Settings
+from mcp_sorter.storage import get_value
 from mcp_sorter.telemetry import RequestTelemetry, Telemetry
 from mcp_sorter.versioning import Configuration, activate, active_versions
 
 
 class ErrorResponse(BaseModel):
     detail: str | list[dict[str, Any]]
+
+
+class DatasetSummary(BaseModel):
+    version: str
+    total: int
+    development: int
+    heldout: int
+
+
+class WorkspaceInfo(BaseModel):
+    application_version: str
+    mode: Literal["demo", "live"]
+    catalog: CatalogSummary | None
+    evaluation_dataset: DatasetSummary
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -104,6 +120,23 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         except ValueError as exc:
             raise HTTPException(503, str(exc)) from exc
         return {"status": "ok", "snapshot": snapshot}
+
+    @application.get("/api/v1/workspace", response_model=WorkspaceInfo)
+    def workspace() -> WorkspaceInfo:
+        runtime: Runtime = application.state.runtime
+        snapshot = get_value(runtime.engine, "active_catalog")
+        dataset = load_golden()
+        return WorkspaceInfo(
+            application_version=__version__,
+            mode=config.mode,
+            catalog=runtime.catalog.summary(snapshot) if snapshot else None,
+            evaluation_dataset=DatasetSummary(
+                version=dataset.version,
+                total=len(dataset.cases),
+                development=sum(case.split == "development" for case in dataset.cases),
+                heldout=sum(case.split == "heldout" for case in dataset.cases),
+            ),
+        )
 
     @application.get("/api/v1/servers", response_model=Ranking)
     def servers(q: str = Query(default="", max_length=500)) -> Ranking:

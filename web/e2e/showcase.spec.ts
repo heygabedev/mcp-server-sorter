@@ -81,6 +81,13 @@ test('search, compare, save, export and evaluate without external requests', asy
 test('accessible catalog, keyboard details and mobile layout', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('button', { name: 'GitHub', exact: true })).toBeVisible();
+  const workspace = await (await page.request.get('/api/v1/workspace')).json();
+  await expect(page.getByLabel('Application status')).toContainText(
+    `v${workspace.application_version}`,
+  );
+  await expect(page.getByLabel('Total catalog records')).toHaveText(
+    String(workspace.catalog.total),
+  );
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.screenshot({ path: 'test-results/showcase-desktop.png' });
   await page.getByRole('button', { name: 'GitHub', exact: true }).focus();
@@ -96,4 +103,31 @@ test('accessible catalog, keyboard details and mobile layout', async ({ page }) 
     true,
   );
   await page.screenshot({ path: 'test-results/showcase-mobile.png' });
+});
+
+test('category and deployment filters reach the API and narrow the visible results', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: 'GitHub', exact: true })).toBeVisible();
+  const total = await page.getByLabel('Total catalog records').textContent();
+  await page.getByLabel('Search servers').fill('sqlite postgres files');
+  await page.getByRole('button', { name: 'Find servers' }).click();
+  await expect(page.getByRole('button', { name: 'PostgreSQL', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Filesystem', exact: true })).toBeVisible();
+  await page.getByRole('combobox', { name: 'Category', exact: true }).selectOption('database');
+  await page.getByRole('combobox', { name: 'Deployment', exact: true }).selectOption('local');
+  const submitted = page.waitForRequest(
+    (request) => request.url().endsWith('/api/v1/rankings') && request.method() === 'POST',
+  );
+  await page.getByRole('button', { name: 'Apply filters' }).click();
+  expect((await submitted).postDataJSON()).toEqual({
+    query: 'sqlite postgres files',
+    filters: { category: 'database', deployment: 'local' },
+    profile: 'baseline',
+    limit: 50,
+  });
+  await expect(page.locator('.server-card')).toHaveCount(1);
+  await expect(page.getByRole('button', { name: 'SQLite', exact: true })).toBeVisible();
+  await expect(page.getByLabel('Total catalog records')).toHaveText(total!);
 });

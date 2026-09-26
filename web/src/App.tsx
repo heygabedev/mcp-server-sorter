@@ -3,6 +3,7 @@ import VersionsView from './views/VersionsView';
 import CollectionsView from './views/CollectionsView';
 import EvaluationsView from './views/EvaluationsView';
 import OperationsView from './views/OperationsView';
+import { useWorkspace } from './useWorkspace';
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import {
@@ -45,6 +46,7 @@ const icons = {
 };
 
 export default function App() {
+  const { workspace, unavailable, refresh: refreshWorkspace } = useWorkspace();
   const [tab, setTab] = useState<Tab>('Discover');
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('');
@@ -63,6 +65,18 @@ export default function App() {
   const [report, setReport] = useState<Report | null>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const requestNumber = useRef(0);
+  const catalog = workspace?.catalog;
+  const catalogLabel = !workspace
+    ? unavailable
+      ? 'CATALOG UNAVAILABLE'
+      : 'CHECKING CATALOG'
+    : !catalog
+      ? 'NO CATALOG'
+      : catalog.simulated === catalog.total
+        ? 'SYNTHETIC DATA'
+        : catalog.simulated > 0
+          ? 'MIXED DATA'
+          : 'SOURCE METADATA';
 
   async function search(value = query) {
     const sequence = ++requestNumber.current;
@@ -88,10 +102,14 @@ export default function App() {
 
   useEffect(() => {
     const controller = new AbortController();
+    const sequence = ++requestNumber.current;
     api<Ranking>('/servers', undefined, controller.signal)
-      .then(setRanking)
+      .then((result) => {
+        if (!controller.signal.aborted && sequence === requestNumber.current) setRanking(result);
+      })
       .catch((cause) => {
-        if (!controller.signal.aborted) setError(message(cause));
+        if (!controller.signal.aborted && sequence === requestNumber.current)
+          setError(message(cause));
       });
     return () => controller.abort();
   }, []);
@@ -105,7 +123,9 @@ export default function App() {
     setTab(next);
     setError('');
     setNotice('');
+    void refreshWorkspace();
     try {
+      if (next === 'Discover') await search();
       if (next === 'Collections') setCollections(await api<Selection[]>('/collections'));
       if (next === 'Evaluations') setReports(await api<Report[]>('/evaluations'));
     } catch (cause) {
@@ -221,7 +241,11 @@ export default function App() {
               >
                 <Icon size={18} />
                 <span>{item}</span>
-                {item === 'Discover' && <span className="nav-count">30</span>}
+                {item === 'Discover' && (
+                  <span className="nav-count" aria-label="Total catalog records">
+                    {workspace ? (catalog?.total ?? 0) : '—'}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -229,11 +253,19 @@ export default function App() {
         <div className="sidebar-note">
           <Terminal size={19} />
           <strong>Built to run locally.</strong>
-          <p>Your catalog, collections, and evaluations stay on this machine.</p>
+          <p>Browse saved catalogs, collections, and evaluation reports on this machine.</p>
           <code>mcp-sorter serve</code>
         </div>
-        <div className="sidebar-footer">
-          <span className="status-dot" /> Offline showcase <span>v0.1.0</span>
+        <div className="sidebar-footer" aria-label="Application status" aria-live="polite">
+          {workspace && <span className="status-dot" />}
+          {workspace
+            ? workspace.mode === 'demo'
+              ? 'Offline showcase'
+              : 'Live mode'
+            : unavailable
+              ? 'Status unavailable'
+              : 'Checking status…'}
+          {workspace && <span>v{workspace.application_version}</span>}
         </div>
       </aside>
 
@@ -243,11 +275,11 @@ export default function App() {
             Workspace <ChevronRight size={14} /> <strong>{tab}</strong>
           </span>
           <span className="demo-label">
-            DEMO DATA <span className="status-dot" />
+            {catalogLabel} {catalog && <span className="status-dot" />}
           </span>
         </header>
         <main id="main" tabIndex={-1}>
-          {tab === 'Operations' && <OperationsView />}
+          {tab === 'Operations' && <OperationsView onCatalogChanged={refreshWorkspace} />}
           {error && (
             <div className="alert error" role="alert">
               {error}
@@ -458,8 +490,13 @@ export default function App() {
               <div className="catalog-note">
                 <CircleHelp size={15} />
                 <span>
-                  30 synthetic server records. Capabilities and versions are illustrative, with no
-                  vendor verification.
+                  {!workspace
+                    ? 'Catalog information is unavailable.'
+                    : !catalog
+                      ? 'No active catalog.'
+                      : catalog.simulated === catalog.total
+                        ? `${catalog.total} synthetic server records. Capabilities and versions are illustrative, with no vendor verification.`
+                        : `${catalog.total} server records, including ${catalog.simulated} synthetic records. Source declarations are not independently verified.`}
                 </span>
               </div>
               {selected.length > 0 && (
@@ -490,6 +527,7 @@ export default function App() {
           )}
           {tab === 'Evaluations' && (
             <EvaluationsView
+              dataset={workspace?.evaluation_dataset ?? null}
               profile={profile}
               setProfile={setProfile}
               busy={busy}
@@ -499,7 +537,7 @@ export default function App() {
               setReport={setReport}
             />
           )}
-          {tab === 'Versions' && <VersionsView />}
+          {tab === 'Versions' && <VersionsView onCatalogChanged={refreshWorkspace} />}
         </main>
         <footer className="workspace-footer">
           <span>MCP SERVER SORTER</span>
@@ -532,7 +570,9 @@ export default function App() {
         </button>
         {detail && (
           <>
-            <span className="eyebrow">SERVER DETAILS · SIMULATED</span>
+            <span className="eyebrow">
+              SERVER DETAILS · {detail.simulated ? 'SIMULATED' : 'SOURCE METADATA'}
+            </span>
             <h2>{detail.name}</h2>
             <p>{detail.description}</p>
             <dl className="facts">
@@ -552,7 +592,11 @@ export default function App() {
               <div className="evidence" key={item.id}>
                 <code>{item.id}</code>
                 <p>{item.statement}</p>
-                <span>Fixture reference · illustrative metadata</span>
+                <span>
+                  {item.kind === 'fixture'
+                    ? 'Fixture reference · illustrative metadata'
+                    : `${item.kind} reference · unverified source declaration`}
+                </span>
               </div>
             ))}
           </>

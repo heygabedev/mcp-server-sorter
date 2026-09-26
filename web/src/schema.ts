@@ -101,6 +101,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/workspace': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Workspace */
+    get: operations['workspace_api_v1_workspace_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/servers': {
     parameters: {
       query?: never;
@@ -394,6 +411,15 @@ export interface components {
         [key: string]: unknown;
       };
     };
+    /** CatalogSummary */
+    CatalogSummary: {
+      /** Snapshot */
+      snapshot: string;
+      /** Total */
+      total: number;
+      /** Simulated */
+      simulated: number;
+    };
     /** CollectionRequest */
     CollectionRequest: {
       /** Name */
@@ -461,6 +487,17 @@ export interface components {
        * @constant
        */
       model_profiles_version: 'profiles-v1';
+    };
+    /** DatasetSummary */
+    DatasetSummary: {
+      /** Version */
+      version: string;
+      /** Total */
+      total: number;
+      /** Development */
+      development: number;
+      /** Heldout */
+      heldout: number;
     };
     /** ErrorResponse */
     ErrorResponse: {
@@ -788,6 +825,18 @@ export interface components {
        * @default false
        */
       simulated: boolean;
+    };
+    /** WorkspaceInfo */
+    WorkspaceInfo: {
+      /** Application Version */
+      application_version: string;
+      /**
+       * Mode
+       * @enum {string}
+       */
+      mode: 'demo' | 'live';
+      catalog: components['schemas']['CatalogSummary'] | null;
+      evaluation_dataset: components['schemas']['DatasetSummary'];
     };
   };
   responses: never;
@@ -1295,6 +1344,98 @@ export interface operations {
           'application/json': {
             [key: string]: string;
           };
+        };
+      };
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Method Not Allowed */
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Content Too Large */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  workspace_api_v1_workspace_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['WorkspaceInfo'];
         };
       };
       /** @description Bad Request */

@@ -650,6 +650,104 @@
         }
       }
     },
+    "/api/v1/workspace": {
+      "get": {
+        "summary": "Workspace",
+        "operationId": "workspace_api_v1_workspace_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceInfo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Content Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/servers": {
       "get": {
         "summary": "Servers",
@@ -2601,6 +2699,27 @@
         ],
         "title": "CaseResult"
       },
+      "CatalogSummary": {
+        "properties": {
+          "snapshot": {
+            "type": "string",
+            "title": "Snapshot"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total"
+          },
+          "simulated": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Simulated"
+          }
+        },
+        "type": "object",
+        "required": ["snapshot", "total", "simulated"],
+        "title": "CatalogSummary"
+      },
       "CollectionRequest": {
         "properties": {
           "name": {
@@ -2725,6 +2844,29 @@
         "additionalProperties": false,
         "type": "object",
         "title": "Configuration"
+      },
+      "DatasetSummary": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "development": {
+            "type": "integer",
+            "title": "Development"
+          },
+          "heldout": {
+            "type": "integer",
+            "title": "Heldout"
+          }
+        },
+        "type": "object",
+        "required": ["version", "total", "development", "heldout"],
+        "title": "DatasetSummary"
       },
       "ErrorResponse": {
         "properties": {
@@ -3358,6 +3500,35 @@
           "evidence"
         ],
         "title": "ServerRecord"
+      },
+      "WorkspaceInfo": {
+        "properties": {
+          "application_version": {
+            "type": "string",
+            "title": "Application Version"
+          },
+          "mode": {
+            "type": "string",
+            "enum": ["demo", "live"],
+            "title": "Mode"
+          },
+          "catalog": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CatalogSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "evaluation_dataset": {
+            "$ref": "#/components/schemas/DatasetSummary"
+          }
+        },
+        "type": "object",
+        "required": ["application_version", "mode", "catalog", "evaluation_dataset"],
+        "title": "WorkspaceInfo"
       }
     }
   }

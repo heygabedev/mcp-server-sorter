@@ -9,13 +9,19 @@ from importlib.resources import files
 from pathlib import Path
 from uuid import uuid4
 
-from pydantic import AwareDatetime, TypeAdapter
+from pydantic import AwareDatetime, BaseModel, Field, TypeAdapter
 from sqlalchemy import Engine, text
 
 from mcp_sorter.models import ServerRecord
 from mcp_sorter.storage import canonical, get_value
 
 SCHEMA_VERSION = 1
+
+
+class CatalogSummary(BaseModel):
+    snapshot: str
+    total: int = Field(ge=0)
+    simulated: int = Field(ge=0)
 
 
 class Catalog:
@@ -132,6 +138,14 @@ class Catalog:
                 ServerRecord.model_validate_json(row[0])
                 for row in db.execute("SELECT payload FROM servers ORDER BY id")
             ]
+
+    def summary(self, snapshot: str) -> CatalogSummary:
+        with self.connect(snapshot) as db:
+            total, simulated = db.execute(
+                "SELECT COUNT(*), COALESCE(SUM(json_extract(payload,'$.simulated') = 1), 0) "
+                "FROM servers"
+            ).fetchone()
+        return CatalogSummary(snapshot=snapshot, total=total, simulated=simulated)
 
     def snapshots(self) -> list[str]:
         return sorted(path.stem for path in self.directory.glob("*.sqlite"))

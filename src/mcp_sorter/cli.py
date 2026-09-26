@@ -12,10 +12,10 @@ from mcp_sorter.evaluation import (
     report_path,
     save_report,
 )
+from mcp_sorter.gateways import rank_with_profile
 from mcp_sorter.models import Filters
-from mcp_sorter.ranking import RankRequest
+from mcp_sorter.ranking import Profile, RankRequest
 from mcp_sorter.ranking import compare as compare_servers
-from mcp_sorter.ranking import rank as rank_servers
 from mcp_sorter.runtime import Runtime
 from mcp_sorter.settings import Settings
 from mcp_sorter.sources import fetch_registry
@@ -51,12 +51,12 @@ def demo() -> None:
 
 @app.command()
 @app.command("search")
-def rank(query: str, category: str | None = None) -> None:
+def rank(query: str, category: str | None = None, profile: Profile = "baseline") -> None:
     """Find matching servers and print evidence-linked rankings as JSON."""
     runtime = Runtime(Settings())
     try:
-        result = rank_servers(
-            runtime.catalog, RankRequest(query=query, filters=Filters(category=category))
+        result = rank_with_profile(
+            runtime, RankRequest(query=query, filters=Filters(category=category), profile=profile)
         )
         typer.echo(result.model_dump_json(indent=2))
     finally:
@@ -96,11 +96,17 @@ def sync_catalog() -> None:
 
 
 @eval_app.command("run")
-def run_evaluation() -> None:
+def run_evaluation(profile: Profile = "baseline") -> None:
     """Run the mock golden dataset and save immutable JSON and HTML reports."""
     runtime = Runtime(Settings())
     try:
-        report = evaluate(runtime.catalog)
+        report = evaluate(
+            runtime.catalog,
+            profile=profile,
+            ranker=lambda catalog, query: rank_with_profile(
+                runtime, query.model_copy(update={"profile": profile})
+            ),
+        )
         save_report(runtime.settings.data_dir, report)
         typer.echo(report.model_dump_json(indent=2))
     finally:

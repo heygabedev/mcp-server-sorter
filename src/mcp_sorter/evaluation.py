@@ -103,6 +103,7 @@ class CaseResult(BaseModel):
     expected_top_correct: bool
     fallback: bool
     latency_ms: float
+    model_metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class EvaluationReport(BaseModel):
@@ -135,7 +136,13 @@ def summarize(cases: list[CaseResult]) -> dict[str, float | None]:
             "expected_top_accuracy": sum(c.expected_top_correct for c in cases) / len(cases),
             "fallback_rate": sum(c.fallback for c in cases) / len(cases),
             "mean_latency_ms": sum(c.latency_ms for c in cases) / len(cases),
-            "cost_usd": 0.0,
+            "cost_usd": (
+                None if any(c.model_metadata.get("simulated") is False for c in cases) else 0.0
+            ),
+            "schema_failure_rate": sum(
+                c.model_metadata.get("failure") == "invalid-schema" for c in cases
+            )
+            / len(cases),
             "unsupported_claim_rate": None,
         }
     )
@@ -192,6 +199,7 @@ def evaluate(
                 ),
                 fallback=ranking.fallback_reason is not None,
                 latency_ms=(perf_counter() - started) * 1000,
+                model_metadata={**ranking.model_metadata, "failure": ranking.fallback_reason},
             )
         )
         provenance = ranking.model_dump(exclude={"results", "query", "filters", "fallback_reason"})
@@ -201,6 +209,9 @@ def evaluate(
         dataset_sha256=hashlib.sha256(canonical(dataset.model_dump()).encode()).hexdigest(),
         source_sha256=source_digest(),
         profile=profile,
+        execution_mode="live-on-fixtures"
+        if any(c.model_metadata.get("simulated") is False for c in results)
+        else "fixture",
         provenance=provenance,
         cases=results,
         summary=summarize(results),

@@ -1,7 +1,6 @@
-from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, HttpUrl
 
 
 class Evidence(BaseModel):
@@ -25,7 +24,7 @@ class ServerRecord(BaseModel):
     deployment: Literal["local", "remote", "unknown"] = "unknown"
     license: str | None = Field(default=None, max_length=100)
     status: Literal["active", "deprecated", "unknown"] = "unknown"
-    updated_at: datetime
+    updated_at: AwareDatetime
     evidence: tuple[Evidence, ...] = Field(min_length=1, max_length=30)
     simulated: bool = False
 

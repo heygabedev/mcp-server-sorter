@@ -55,7 +55,7 @@ def test_invalid_refresh_keeps_current_catalog(catalog):
     original = catalog.active()
     for records in ([], catalog.records() * 2):
         with pytest.raises(ValueError):
-            catalog.publish(records, "2026-09-01")
+            catalog.publish(records, "2026-09-01T00:00:00Z")
     with pytest.raises(ValueError):
         catalog.activate("../../state")
     with pytest.raises(ValueError, match="Unknown"):

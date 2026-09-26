@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, expect, test, vi } from 'vitest';
 import App from './App';
 import catalog from '../../src/mcp_sorter/data/catalog.json';
@@ -52,21 +52,80 @@ test('loads the catalog and exposes inspectable details', async () => {
   expect(screen.getByText('fixture.github.capabilities')).toBeInTheDocument();
 });
 
-test('sends query and filters to the shared ranking API', async () => {
+test.each([
+  { button: 'Find servers', category: 'database', deployment: 'local', profile: 'demo-balanced' },
+  { button: 'Apply filters', category: 'development', deployment: 'remote', profile: 'demo-fast' },
+])(
+  'sends every search option through $button',
+  async ({ button, category, deployment, profile }) => {
+    render(<App />);
+    await screen.findByRole('button', { name: 'GitHub' });
+    fireEvent.change(screen.getByLabelText('Search servers'), {
+      target: { value: 'pull requests' },
+    });
+    fireEvent.change(screen.getByLabelText('Category'), { target: { value: category } });
+    fireEvent.change(screen.getByLabelText('Deployment'), { target: { value: deployment } });
+    fireEvent.change(screen.getByLabelText('Ranking profile'), { target: { value: profile } });
+    fireEvent.click(screen.getByRole('button', { name: button }));
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/v1/rankings',
+        expect.objectContaining({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      ),
+    );
+    const request = vi.mocked(fetch).mock.calls.find(([path]) => path === '/api/v1/rankings');
+    expect(JSON.parse(String(request?.[1]?.body))).toEqual({
+      query: 'pull requests',
+      filters: { category, deployment },
+      profile,
+      limit: 50,
+    });
+  },
+);
+
+test('clearing category and deployment removes both constraints from the next request', async () => {
   render(<App />);
   await screen.findByRole('button', { name: 'GitHub' });
-  fireEvent.change(screen.getByLabelText('Search servers'), { target: { value: 'pull requests' } });
+  fireEvent.change(screen.getByLabelText('Category'), { target: { value: 'database' } });
+  fireEvent.change(screen.getByLabelText('Deployment'), { target: { value: 'local' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Apply filters' }));
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Find servers' })).toBeEnabled());
+  fireEvent.change(screen.getByLabelText('Category'), { target: { value: '' } });
+  fireEvent.change(screen.getByLabelText('Deployment'), { target: { value: '' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Apply filters' }));
+  await waitFor(() => {
+    const requests = vi.mocked(fetch).mock.calls.filter(([path]) => path === '/api/v1/rankings');
+    expect(requests).toHaveLength(2);
+    expect(JSON.parse(String(requests[1][1]?.body))).toEqual({
+      query: '',
+      filters: { category: null, deployment: null },
+      profile: 'baseline',
+      limit: 50,
+    });
+  });
+});
+
+test('a delayed initial catalog cannot replace newer filtered results', async () => {
+  let resolveCatalog!: (response: Response) => void;
+  const initial = new Promise<Response>((resolve) => {
+    resolveCatalog = resolve;
+  });
+  const filtered = { ...ranking, query: 'github', results: ranking.results.slice(0, 1) };
+  vi.mocked(fetch).mockImplementation(async (path) => {
+    if (path === '/api/v1/servers') return initial;
+    return Response.json(path === '/api/v1/workspace' ? workspace : filtered);
+  });
+  render(<App />);
+  fireEvent.change(screen.getByLabelText('Search servers'), { target: { value: 'github' } });
   fireEvent.change(screen.getByLabelText('Category'), { target: { value: 'development' } });
   fireEvent.click(screen.getByRole('button', { name: 'Find servers' }));
-  await waitFor(() =>
-    expect(fetch).toHaveBeenCalledWith(
-      '/api/v1/rankings',
-      expect.objectContaining({
-        body: expect.stringContaining('pull requests'),
-        method: 'POST',
-      }),
-    ),
-  );
+  await screen.findByRole('heading', { name: 'Matching servers 1' });
+  await act(async () => resolveCatalog(Response.json(ranking)));
+  expect(screen.getByRole('heading', { name: 'Matching servers 1' })).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Slack' })).not.toBeInTheDocument();
 });
 
 test('shows a recoverable service error', async () => {

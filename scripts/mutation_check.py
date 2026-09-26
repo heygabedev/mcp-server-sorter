@@ -39,6 +39,13 @@ MUTATIONS = [
         "Ignore reciprocal position",
     ),
     ("evaluation", "delta >= -0.02", "delta >= -1.02", "Accept a severe regression"),
+    ("evaluation", 'after["abstention_accuracy"] != 1', "False", "Ignore incorrect abstentions"),
+    (
+        "evaluation",
+        "for split in sorted({c.split for c in candidate.cases}):",
+        "for split in []:",
+        "Skip split regression gates",
+    ),
     ("recovery", "if digest(artifact) != expected:", "if False:", "Skip backup checksums"),
     (
         "recovery",
@@ -118,7 +125,7 @@ def main():
         report = {
             "created_at": datetime.now(UTC).isoformat(),
             "source_sha256": source_digest(),
-            "scope": "13 targeted retrieval, evaluation, and recovery mutations",
+            "scope": f"{len(MUTATIONS)} targeted retrieval, evaluation, and recovery mutations",
             "exclusions": [],
             "results": results,
             "detection_rate": score,

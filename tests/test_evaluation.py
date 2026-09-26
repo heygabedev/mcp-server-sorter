@@ -117,6 +117,77 @@ def test_regression_gate_catches_degraded_ranking(runtime):
         compare_reports(baseline, candidate)
 
 
+@pytest.mark.parametrize("behavior", ["never", "always"])
+def test_abstention_gate_uses_cases_instead_of_cached_summary(runtime, behavior):
+    def broken(catalog, request):
+        result = rank(catalog, request)
+        if behavior == "never" and not result.results:
+            result = rank(catalog, request.model_copy(update={"query": "github"}))
+        if behavior == "always":
+            result.results = []
+        return result
+
+    baseline = evaluate(runtime.catalog)
+    candidate = evaluate(runtime.catalog, ranker=broken)
+    assert sum(not c.abstention_correct for c in candidate.cases) == (
+        30 if behavior == "never" else 60
+    )
+    candidate.summary = baseline.summary
+    assert not compare_reports(baseline, candidate)["passes_regression_gate"]
+
+
+def test_comparison_rejects_empty_and_duplicate_reports(runtime):
+    report = evaluate(runtime.catalog)
+    for cases, message in [([], "nonempty"), ([report.cases[0]] * 2, "unique")]:
+        with pytest.raises(ValueError, match=message):
+            compare_reports(report, report.model_copy(update={"cases": cases}))
+
+
+def test_comparison_detects_a_split_regression_hidden_by_the_average(runtime):
+    baseline = evaluate(runtime.catalog)
+    candidate = baseline.model_copy(deep=True)
+    for case in candidate.cases:
+        if case.split == "development" and case.metrics["ndcg_at_5"] is not None:
+            case.metrics["ndcg_at_5"] = 0.95
+    result = compare_reports(baseline, candidate)
+    assert result["ndcg_delta"] > -0.02
+    assert result["failures"] == [{"scope": "development", "code": "ndcg-regression"}]
+    assert not result["passes_regression_gate"]
+    candidate.cases[0].split = "heldout"
+    with pytest.raises(ValueError, match="split"):
+        compare_reports(baseline, candidate)
+
+
+@pytest.mark.parametrize("decrease,passed", [(0.02, True), (0.020001, False)])
+def test_ndcg_gate_threshold(runtime, decrease, passed):
+    baseline = evaluate(runtime.catalog)
+    candidate = baseline.model_copy(deep=True)
+    for case in candidate.cases:
+        if case.metrics["ndcg_at_5"] is not None:
+            case.metrics["ndcg_at_5"] -= decrease
+    assert compare_reports(baseline, candidate)["passes_regression_gate"] is passed
+
+
+def test_gate_failures_reach_api_and_cli(runtime, monkeypatch):
+    baseline = evaluate(runtime.catalog)
+    candidate = baseline.model_copy(deep=True)
+    candidate.id = "f" * 32
+    candidate.cases[0].abstention_correct = False
+    save_report(runtime.settings.data_dir, baseline)
+    save_report(runtime.settings.data_dir, candidate)
+    monkeypatch.setenv("SORTER_DATA_DIR", str(runtime.settings.data_dir))
+    result = CliRunner().invoke(app, ["eval", "compare", baseline.id, candidate.id])
+    assert result.exit_code == 1
+    assert json.loads(result.stdout)["gate_policy_version"] == "fixture-regression-v2"
+    with TestClient(create_app(runtime.settings)) as http:
+        result = http.get(
+            "/api/v1/evaluation-comparison",
+            params={"baseline": baseline.id, "candidate": candidate.id},
+        )
+        assert result.status_code == 200
+        assert {"scope": "overall", "code": "incorrect-abstention"} in result.json()["failures"]
+
+
 def test_reports_are_immutable_and_html_is_escaped(runtime, tmp_path):
     report = evaluate(runtime.catalog)
     report.profile = "<script>alert(1)</script>"

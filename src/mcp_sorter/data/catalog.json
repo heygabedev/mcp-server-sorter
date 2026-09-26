@@ -1,0 +1,865 @@
+{
+  "schema_version": 1,
+  "as_of": "2026-09-01T00:00:00Z",
+  "notice": "Synthetic showcase metadata, not vendor assertions.",
+  "records": [
+    {
+      "id": "demo/github",
+      "name": "GitHub",
+      "version": "1.0.0-demo",
+      "description": "Simulated GitHub integration for repositories pull requests code reviews.",
+      "category": "development",
+      "tags": [
+        "repositories",
+        "pull",
+        "requests",
+        "code",
+        "reviews"
+      ],
+      "auth": "oauth",
+      "transport": "streamable-http",
+      "deployment": "remote",
+      "license": null,
+      "status": "active",
+      "updated_at": "2026-09-01T00:00:00Z",
+      "simulated": true,
+      "evidence": [
+        {
+          "id": "fixture.github.capabilities",
+          "kind": "fixture",
+          "url": "https://example.invalid/demo/github",
+          "statement": "Simulated GitHub integration for repositories pull requests code reviews."
+        }
+      ]
+    },
+    {
+      "id": "demo/notion",
+      "name": "Notion",
+      "version": "1.0.0-demo",
+      "description": "Simulated Notion integration for wiki pages notes knowledge workspace.",
+      "category": "knowledge",
+      "tags": [
+        "wiki",
+        "pages",
+        "notes",
+        "knowledge",
+        "workspace"
+      ],
+      "auth": "oauth",
+      "transport": "streamable-http",
+      "deployment": "remote",
+      "license": null,
+      "status": "active",
+      "updated_at": "2026-09-01T00:00:00Z",
+      "simulated": true,
+      "evidence": [
+        {
+          "id": "fixture.notion.capabilities",
+          "kind": "fixture",
+          "url": "https://example.invalid/demo/notion",
+          "statement": "Simulated Notion integration for wiki pages notes knowledge workspace."
+        }
+      ]
+    },
+    {
+      "id": "demo/slack",
+      "name": "Slack",
+      "version": "1.0.0-demo",
+      "description": "Simulated Slack integration for channels messages conversation threads.",
+      "category": "communication",
+      "tags": [
+        "channels",
+        "messages",
+        "conversation",
+        "threads"
+      ],
+      "auth": "oauth",
+      "transport": "streamable-http",
+      "deployment": "remote",
+      "license": null,
+      "status": "active",
+      "updated_at": "2026-09-01T00:00:00Z",
+      "simulated": true,
+      "evidence": [
+        {
+          "id": "fixture.slack.capabilities",
+          "kind": "fixture",
+          "url": "https://example.invalid/demo/slack",
+          "statement": "Simulated Slack integration for channels messages conversation threads."
+        }
+      ]
+    },
+    {
+      "id": "demo/figma",
+      "name": "Figma",
+      "version": "1.0.0-demo",
+      "description": "Simulated Figma integration for design frames components layouts.",
+      "category": "design",
+      "tags": [
+        "design",
+        "frames",
+        "components",
+        "layouts"
+      ],
+      "auth": "oauth",
+      "transport": "streamable-http",
+      "deployment": "remote",
+      "license": null,
+      "status": "active",
+      "updated_at": "2026-09-01T00:00:00Z",
+      "simulated": true,
+      "evidence": [
+        {
+          "id": "fixture.figma.capabilities",
+          "kind": "fixture",
+          "url": "https://example.invalid/demo/figma",
+          "statement": "Simulated Figma integration for design frames components layouts."
+        }
+      ]
+    },
+    {
+      "id": "demo/linear",
+      "name": "Linear",
+      "version": "1.0.0-demo",
+      "description": "Simulated Linear integration for engineering issues cycles roadmaps.",
+      "category": "development",
+      "tags": [
+        "engineering",
+        "issues",
+        "cycles",
+        "roadmaps"
+      ],
+      "auth": "api_key",
+      "transport": "streamable-http",
+      "deployment": "remote",
+      "license": null,
+      "status": "active",
+      "updated_at": "2026-09-01T00:00:00Z",
+      "simulated": true,
+      "evidence": [
+        {
+          "id": "fixture.linear.capabilities",
+          "kind": "fixture",
+          "url": "https://example.invalid/demo/linear",
+          "statement": "Simulated Linear integration for engineering issues cycles roadmaps."
+        }
+      ]
+    },
+    {
+      "id": "demo/postgres",
+      "name": "PostgreSQL",
+      "version": "1.0.0-demo",
+      "description": "Simulated PostgreSQL integration for postgres relational SQL schemas transactions.",
+      "category": "database",
+      "tags": [
+        "postgres",
+        "relational",
+        "SQL",
+        "schemas",
+        "transactions"
+      ],
+      "auth": "api_key",
+      "transport": "streamable-http",
+      "deployment": "remote",
+      "license": null,
+      "status": "active",
+      "updated_at": "2026-09-01T00:00:00Z",
+      "simulated": true,
+      "evidence": [
+        {
+          "id": "fixture.postgres.capabilities",
+          "kind": "fixture",
+          "url": "https://example.invalid/demo/postgres",
+          "statement": "Simulated PostgreSQL integration for postgres relational SQL schemas transactions."
+        }
+      ]
+    },
+    {
+      "id": "demo/sqlite",
+      "name": "SQLite",
+      "version": "1.0.0-demo",
+      "description": "Simulated SQLite integration for sqlite embedded database local tables.",
+      "category": "database",
+      "tags": [
+        "sqlite",
+        "embedded",
+        "database",
+        "local",
+        "tables"
+      ],
+      "auth": "none",
+      "transport": "stdio",
+      "deployment": "local",
+      "license": "MIT",
+      "status": "active",
+      "updated_at": "2026-09-01T00:00:00Z",
+      "simulated": true,
+      "evidence": [
+        {
+          "id": "fixture.sqlite.capabilities",
+          "kind": "fixture",
+          "url": "https://example.invalid/demo/sqlite",
+          "statement": "Simulated SQLite integration for sqlite embedded database local tables."
+        }
+      ]
+    },
+    {
+      "id": "demo/filesystem",
+      "name": "Filesystem",
+      "version": "1.0.0-demo",
+      "description": "Simulated Filesystem integration for files directories disk folders.",
+      "category": "files",
+      "tags": [
+        "files",
+        "directories",
+        "disk",
+        "folders"
+      ],
+      "auth": "none",
+      "transport": "stdio",
+      "deployment": "local",
+      "license": "MIT",
+      "status": "active",
+      "updated_at": "2026-09-01T00:00:00Z",
+      "simulated": true,
+      "evidence": [
+        {
+          "id": "fixture.filesystem.capabilities",
+          "kind": "fixture",
+          "url": "https://example.invalid/demo/filesystem",
+          "statement": "Simulated Filesystem integration for files directories disk folders."
+        }
+      ]
+    },
+    {
+      "id": "demo/browser",
+      "name": "Browser",
+      "version": "1.0.0-demo",
+      "description": "Simulated Browser integration for browser screenshots page inspection automation.",
+      "category": "development",
+      "tags": [
+        "browser",
+        "screenshots",
+        "page",
+        "inspection",
+        "automation"
+      ],
+      "auth": "none",
+      "transport": "stdio",
+      "deployment": "local",
+      "license": "MIT",
+      "status": "active",
+      "updated_at": "2026-09-01T00:00:00Z",
+      "simulated": true,
+      "evidence": [
+        {
+          "id": "fixture.browser.capabilities",
+          "kind": "fixture",
+          "url": "https://example.invalid/demo/browser",
+          "statement": "Simulated Browser integration for browser screenshots page inspection automation."
+        }
+      ]
+    },
+    {
+      "id": "demo/memory",
+      "name": "Memory",
+      "version": "1.0.0-demo",
+      "description": "Simulated Memory integration for memory entities relationships persistent graph.",
+      "category": "knowledge",
+      "tags": [
+        "memory",
+        "entities",
+        "relationships",
+        "persistent",
+        "graph"
+      ],
+      "auth": "none",
+      "transport": "stdio",
+      "deployment": "local",
+      "license": "MIT",
+      "status": "active",
+      "updated_at": "2026-09-01T00:00:00Z",
+      "simulated": true,
+      "evidence": [
+        {
+          "id": "fixture.memory.capabilities",
+          "kind": "fixture",
+          "url": "https://example.invalid/demo/memory",
+          "statement": "Simulated Memory integration for memory entities relationships persistent graph."
+        }
+      ]
+    },
+    {
+      "id": "demo/search",
+      "name": "Web Search",
+      "version": "1.0.0-demo",
+      "description": "Simulated Web Search integration for search websites discovery indexed results.",
+      "category": "research",
+      "tags": [
+        "search",
+        "websites",
+        "discovery",
+        "indexed",
+        "results"
+      ],
+      "auth": "api_key",
+      "transport": "streamable-http",
+      "deployment": "remote",
+      "license": null,
+      "status": "active",
+      "updated_at": "2026-09-01T00:00:00Z",
+      "simulated": true,
+      "evidence": [
+        {
+          "id": "fixture.search.capabilities",
+          "kind": "fixture",
+          "url": "https://example.invalid/demo/search",
+          "statement": "Simulated Web Search integration for search websites discovery indexed results."
+        }
+      ]
+    },
+    {
+      "id": "demo/fetch",
+      "name": "Page Fetch",
+      "version": "1.0.0-demo",
+      "description": "Simulated Page Fetch integration for fetch URLs retrieve article content.",
+      "category": "research",
+      "tags": [
+        "fetch",
+        "URLs",
+        "retrieve",
+        "article",
+        "content"
+      ],
+      "auth": "none",
+      "transport": "stdio",
+      "deployment": "local",
+      "license": "MIT",
+      "status": "active",
+      "updated_at": "2026-09-01T00:00:00Z",
+      "simulated": true,
+      "evidence": [
+        {
+          "id": "fixture.fetch.capabilities",
+          "kind": "fixture",
+          "url": "https://example.invalid/demo/fetch",
+          "statement": "Simulated Page Fetch integration for fetch URLs retrieve article content."
+        }
+      ]
+    },
+    {
+      "id": "demo/drive",
+      "name": "Google Drive",
+      "version": "1.0.0-demo",
+      "description": "Simulated Google Drive integration for drive documents shared storage permissions.",
+      "category": "files",
+      "tags": [
+        "drive",
+        "documents",
+        "shared",
+        "storage",
+        "permissions"
+      ],
+      "auth": "oauth",
+      "transport": "streamable-http",
+      "deployment": "remote",
+      "license": null,
+      "status": "active",
+      "updated_at": "2026-09-01T00:00:00Z",
+      "simulated": true,
+      "evidence": [
+        {
+          "id": "fixture.drive.capabilities",
+          "kind": "fixture",
+          "url": "https://example.invalid/demo/drive",
+          "statement": "Simulated Google Drive integration for drive documents shared storage permissions."
+        }
+      ]
+    },
+    {
+      "id": "demo/sheets",
+      "name": "Google Sheets",
+      "version": "1.0.0-demo",
+      "description": "Simulated Google Sheets integration for sheets spreadsheets cells workbook formulas.",
+      "category": "data",
+      "tags": [
+        "sheets",
+        "spreadsheets",
+        "cells",
+        "workbook",
+        "formulas"
+      ],
+      "auth": "oauth",
+      "transport": "streamable-http",
+      "deployment": "remote",
+      "license": null,
+      "status": "active",
+      "updated_at": "2026-09-01T00:00:00Z",
+      "simulated": true,
+      "evidence": [
+        {
+          "id": "fixture.sheets.capabilities",
+          "kind": "fixture",
+          "url": "https://example.invalid/demo/sheets",
+          "statement": "Simulated Google Sheets integration for sheets spreadsheets cells workbook formulas."
+        }
+      ]
+    },
+    {
+      "id": "demo/calendar",
+      "name": "Calendar",
+      "version": "1.0.0-demo",
+      "description": "Simulated Calendar integration for calendar events availability appointments.",
+      "category": "productivity",
+      "tags": [
+        "calendar",
+        "events",
+        "availability",
+        "appointments"
+      ],
+      "auth": "oauth",
+      "transport": "streamable-http",
+      "deployment": "remote",
+      "license": null,
+      "status": "active",
+      "updated_at": "2026-09-01T00:00:00Z",
+      "simulated": true,
+      "evidence": [
+        {
+          "id": "fixture.calendar.capabilities",
+          "kind": "fixture",
+          "url": "https://example.invalid/demo/calendar",
+          "statement": "Simulated Calendar integration for calendar events availability appointments."
+        }
+      ]
+    },
+    {
+      "id": "demo/mail",
+      "name": "Mail",
+      "version": "1.0.0-demo",
+      "description": "Simulated Mail integration for mail email inbox correspondence.",
+      "category": "communication",
+      "tags": [
+        "mail",
+        "email",
+        "inbox",
+        "correspondence"
+      ],
+      "auth": "oauth",
+      "transport": "streamable-http",
+      "deployment": "remote",
+      "license": null,
+      "status": "active",
+      "updated_at": "2026-09-01T00:00:00Z",
+      "simulated": true,
+      "evidence": [
+        {
+          "id": "fixture.mail.capabilities",
+          "kind": "fixture",
+          "url": "https://example.invalid/demo/mail",
+          "statement": "Simulated Mail integration for mail email inbox correspondence."
+        }
+      ]
+    },
+    {
+      "id": "demo/jira",
+      "name": "Jira",
+      "version": "1.0.0-demo",
+      "description": "Simulated Jira integration for jira tickets sprints backlog planning.",
+      "category": "development",
+      "tags": [
+        "jira",
+        "tickets",
+        "sprints",
+        "backlog",
+        "planning"
+      ],
+      "auth": "oauth",
+      "transport": "streamable-http",
+      "deployment": "remote",
+      "license": null,
+      "status": "active",
+      "updated_at": "2026-09-01T00:00:00Z",
+      "simulated": true,
+      "evidence": [
+        {
+          "id": "fixture.jira.capabilities",
+          "kind": "fixture",
+          "url": "https://example.invalid/demo/jira",
+          "statement": "Simulated Jira integration for jira tickets sprints backlog planning."
+        }
+      ]
+    },
+    {
+      "id": "demo/trello",
+      "name": "Trello",
+      "version": "1.0.0-demo",
+      "description": "Simulated Trello integration for trello boards cards kanban.",
+      "category": "productivity",
+      "tags": [
+        "trello",
+        "boards",
+        "cards",
+        "kanban"
+      ],
+      "auth": "api_key",
+      "transport": "streamable-http",
+      "deployment": "remote",
+      "license": null,
+      "status": "active",
+      "updated_at": "2026-09-01T00:00:00Z",
+      "simulated": true,
+      "evidence": [
+        {
+          "id": "fixture.trello.capabilities",
+          "kind": "fixture",
+          "url": "https://example.invalid/demo/trello",
+          "statement": "Simulated Trello integration for trello boards cards kanban."
+        }
+      ]
+    },
+    {
+      "id": "demo/redis",
+      "name": "Redis",
+      "version": "1.0.0-demo",
+      "description": "Simulated Redis integration for redis cache keys expiry values.",
+      "category": "database",
+      "tags": [
+        "redis",
+        "cache",
+        "keys",
+        "expiry",
+        "values"
+      ],
+      "auth": "api_key",
+      "transport": "streamable-http",
+      "deployment": "remote",
+      "license": null,
+      "status": "active",
+      "updated_at": "2026-09-01T00:00:00Z",
+      "simulated": true,
+      "evidence": [
+        {
+          "id": "fixture.redis.capabilities",
+          "kind": "fixture",
+          "url": "https://example.invalid/demo/redis",
+          "statement": "Simulated Redis integration for redis cache keys expiry values."
+        }
+      ]
+    },
+    {
+      "id": "demo/elastic",
+      "name": "Elasticsearch",
+      "version": "1.0.0-demo",
+      "description": "Simulated Elasticsearch integration for elasticsearch indexes aggregation fulltext analytics.",
+      "category": "database",
+      "tags": [
+        "elasticsearch",
+        "indexes",
+        "aggregation",
+        "fulltext",
+        "analytics"
+      ],
+      "auth": "api_key",
+      "transport": "streamable-http",
+      "deployment": "remote",
+      "license": null,
+      "status": "active",
+      "updated_at": "2026-09-01T00:00:00Z",
+      "simulated": true,
+      "evidence": [
+        {
+          "id": "fixture.elastic.capabilities",
+          "kind": "fixture",
+          "url": "https://example.invalid/demo/elastic",
+          "statement": "Simulated Elasticsearch integration for elasticsearch indexes aggregation fulltext analytics."
+        }
+      ]
+    },
+    {
+      "id": "demo/sentry",
+      "name": "Sentry",
+      "version": "1.0.0-demo",
+      "description": "Simulated Sentry integration for sentry exceptions stacktraces error tracking.",
+      "category": "operations",
+      "tags": [
+        "sentry",
+        "exceptions",
+        "stacktraces",
+        "error",
+        "tracking"
+      ],
+      "auth": "api_key",
+      "transport": "streamable-http",
+      "deployment": "remote",
+      "license": null,
+      "status": "active",
+      "updated_at": "2026-09-01T00:00:00Z",
+      "simulated": true,
+      "evidence": [
+        {
+          "id": "fixture.sentry.capabilities",
+          "kind": "fixture",
+          "url": "https://example.invalid/demo/sentry",
+          "statement": "Simulated Sentry integration for sentry exceptions stacktraces error tracking."
+        }
+      ]
+    },
+    {
+      "id": "demo/grafana",
+      "name": "Grafana",
+      "version": "1.0.0-demo",
+      "description": "Simulated Grafana integration for grafana dashboards metrics observability.",
+      "category": "operations",
+      "tags": [
+        "grafana",
+        "dashboards",
+        "metrics",
+        "observability"
+      ],
+      "auth": "api_key",
+      "transport": "streamable-http",
+      "deployment": "remote",
+      "license": null,
+      "status": "active",
+      "updated_at": "2026-09-01T00:00:00Z",
+      "simulated": true,
+      "evidence": [
+        {
+          "id": "fixture.grafana.capabilities",
+          "kind": "fixture",
+          "url": "https://example.invalid/demo/grafana",
+          "statement": "Simulated Grafana integration for grafana dashboards metrics observability."
+        }
+      ]
+    },
+    {
+      "id": "demo/git",
+      "name": "Git",
+      "version": "1.0.0-demo",
+      "description": "Simulated Git integration for git commits branches diffs history.",
+      "category": "development",
+      "tags": [
+        "git",
+        "commits",
+        "branches",
+        "diffs",
+        "history"
+      ],
+      "auth": "none",
+      "transport": "stdio",
+      "deployment": "local",
+      "license": "MIT",
+      "status": "active",
+      "updated_at": "2026-09-01T00:00:00Z",
+      "simulated": true,
+      "evidence": [
+        {
+          "id": "fixture.git.capabilities",
+          "kind": "fixture",
+          "url": "https://example.invalid/demo/git",
+          "statement": "Simulated Git integration for git commits branches diffs history."
+        }
+      ]
+    },
+    {
+      "id": "demo/docker",
+      "name": "Docker",
+      "version": "1.0.0-demo",
+      "description": "Simulated Docker integration for docker containers images inspect workloads.",
+      "category": "operations",
+      "tags": [
+        "docker",
+        "containers",
+        "images",
+        "inspect",
+        "workloads"
+      ],
+      "auth": "none",
+      "transport": "stdio",
+      "deployment": "local",
+      "license": "MIT",
+      "status": "active",
+      "updated_at": "2026-09-01T00:00:00Z",
+      "simulated": true,
+      "evidence": [
+        {
+          "id": "fixture.docker.capabilities",
+          "kind": "fixture",
+          "url": "https://example.invalid/demo/docker",
+          "statement": "Simulated Docker integration for docker containers images inspect workloads."
+        }
+      ]
+    },
+    {
+      "id": "demo/kubernetes",
+      "name": "Kubernetes",
+      "version": "1.0.0-demo",
+      "description": "Simulated Kubernetes integration for kubernetes pods clusters deployments.",
+      "category": "operations",
+      "tags": [
+        "kubernetes",
+        "pods",
+        "clusters",
+        "deployments"
+      ],
+      "auth": "api_key",
+      "transport": "streamable-http",
+      "deployment": "remote",
+      "license": null,
+      "status": "active",
+      "updated_at": "2026-09-01T00:00:00Z",
+      "simulated": true,
+      "evidence": [
+        {
+          "id": "fixture.kubernetes.capabilities",
+          "kind": "fixture",
+          "url": "https://example.invalid/demo/kubernetes",
+          "statement": "Simulated Kubernetes integration for kubernetes pods clusters deployments."
+        }
+      ]
+    },
+    {
+      "id": "demo/weather",
+      "name": "Weather",
+      "version": "1.0.0-demo",
+      "description": "Simulated Weather integration for weather forecasts temperature precipitation.",
+      "category": "data",
+      "tags": [
+        "weather",
+        "forecasts",
+        "temperature",
+        "precipitation"
+      ],
+      "auth": "api_key",
+      "transport": "streamable-http",
+      "deployment": "remote",
+      "license": null,
+      "status": "active",
+      "updated_at": "2026-09-01T00:00:00Z",
+      "simulated": true,
+      "evidence": [
+        {
+          "id": "fixture.weather.capabilities",
+          "kind": "fixture",
+          "url": "https://example.invalid/demo/weather",
+          "statement": "Simulated Weather integration for weather forecasts temperature precipitation."
+        }
+      ]
+    },
+    {
+      "id": "demo/maps",
+      "name": "Maps",
+      "version": "1.0.0-demo",
+      "description": "Simulated Maps integration for maps geocoding directions places.",
+      "category": "data",
+      "tags": [
+        "maps",
+        "geocoding",
+        "directions",
+        "places"
+      ],
+      "auth": "api_key",
+      "transport": "streamable-http",
+      "deployment": "remote",
+      "license": null,
+      "status": "active",
+      "updated_at": "2026-09-01T00:00:00Z",
+      "simulated": true,
+      "evidence": [
+        {
+          "id": "fixture.maps.capabilities",
+          "kind": "fixture",
+          "url": "https://example.invalid/demo/maps",
+          "statement": "Simulated Maps integration for maps geocoding directions places."
+        }
+      ]
+    },
+    {
+      "id": "demo/arxiv",
+      "name": "arXiv",
+      "version": "1.0.0-demo",
+      "description": "Simulated arXiv integration for arxiv papers abstracts academic publications.",
+      "category": "research",
+      "tags": [
+        "arxiv",
+        "papers",
+        "abstracts",
+        "academic",
+        "publications"
+      ],
+      "auth": "none",
+      "transport": "stdio",
+      "deployment": "local",
+      "license": "MIT",
+      "status": "active",
+      "updated_at": "2026-09-01T00:00:00Z",
+      "simulated": true,
+      "evidence": [
+        {
+          "id": "fixture.arxiv.capabilities",
+          "kind": "fixture",
+          "url": "https://example.invalid/demo/arxiv",
+          "statement": "Simulated arXiv integration for arxiv papers abstracts academic publications."
+        }
+      ]
+    },
+    {
+      "id": "demo/time",
+      "name": "Time",
+      "version": "1.0.0-demo",
+      "description": "Simulated Time integration for time timezone clocks conversions.",
+      "category": "productivity",
+      "tags": [
+        "time",
+        "timezone",
+        "clocks",
+        "conversions"
+      ],
+      "auth": "none",
+      "transport": "stdio",
+      "deployment": "local",
+      "license": "MIT",
+      "status": "active",
+      "updated_at": "2026-09-01T00:00:00Z",
+      "simulated": true,
+      "evidence": [
+        {
+          "id": "fixture.time.capabilities",
+          "kind": "fixture",
+          "url": "https://example.invalid/demo/time",
+          "statement": "Simulated Time integration for time timezone clocks conversions."
+        }
+      ]
+    },
+    {
+      "id": "demo/sqlite-legacy",
+      "name": "SQLite Legacy",
+      "version": "1.0.0-demo",
+      "description": "Simulated SQLite Legacy integration for sqlite legacy tables deprecated database.",
+      "category": "database",
+      "tags": [
+        "sqlite",
+        "legacy",
+        "tables",
+        "deprecated",
+        "database"
+      ],
+      "auth": "none",
+      "transport": "stdio",
+      "deployment": "local",
+      "license": "MIT",
+      "status": "deprecated",
+      "updated_at": "2026-09-01T00:00:00Z",
+      "simulated": true,
+      "evidence": [
+        {
+          "id": "fixture.sqlite-legacy.capabilities",
+          "kind": "fixture",
+          "url": "https://example.invalid/demo/sqlite-legacy",
+          "statement": "Simulated SQLite Legacy integration for sqlite legacy tables deprecated database."
+        }
+      ]
+    }
+  ]
+}

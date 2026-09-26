@@ -28,14 +28,24 @@ mcp-sorter = "mcp_sorter.cli:app"
 
 [dependency-groups]
 dev = [
-  "pytest>=9.0.3,<10", "pytest-cov>=6,<8", "pytest-socket>=0.7,<1",
-  "hypothesis>=6.130,<7", "respx>=0.22,<1", "ruff>=0.11,<1",
-  "mypy>=1.15,<2", "schemathesis>=4,<5", "build>=1.2,<2",
+  "pytest>=9.0.3,<10",
+  "pytest-cov>=6,<8",
+  "pytest-socket>=0.7,<1",
+  "hypothesis>=6.130,<7",
+  "respx>=0.22,<1",
+  "ruff>=0.11,<1",
+  "mypy>=1.15,<2",
+  "schemathesis>=4,<5",
+  "build>=1.2,<2",
   "pip-audit>=2.8,<3",
+  "hatchling>=1.27,<2",
 ]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/mcp_sorter"]
+
+[tool.hatch.build.hooks.custom]
+path = "hatch_build.py"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

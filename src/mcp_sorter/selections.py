@@ -3,15 +3,15 @@ from datetime import UTC, datetime
 from typing import Literal, Self
 from uuid import uuid4
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
+from pydantic import AwareDatetime, ConfigDict, Field, model_validator
 from sqlalchemy import text
 
-from mcp_sorter.models import ServerRecord
+from mcp_sorter.models import ServerRecord, VersionedModel
 from mcp_sorter.runtime import Runtime
 from mcp_sorter.storage import canonical
 
 
-class Selection(BaseModel):
+class Selection(VersionedModel):
     model_config = ConfigDict(extra="forbid")
     schema_version: Literal[1] = 1
     id: str = Field(pattern=r"^[a-f0-9]{32}$")
@@ -27,7 +27,7 @@ class Selection(BaseModel):
         return self
 
 
-class SelectionExport(BaseModel):
+class SelectionExport(VersionedModel):
     model_config = ConfigDict(extra="forbid")
     schema_version: Literal[1] = 1
     content_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")

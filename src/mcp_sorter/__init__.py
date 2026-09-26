@@ -1,3 +1,8 @@
 """MCP server discovery and reproducible evaluation."""
 
-__version__ = "0.1.0"
+import json
+from importlib.resources import files
+
+__version__: str = json.loads(files(__package__).joinpath("release.json").read_text("utf-8"))[
+    "application_version"
+]

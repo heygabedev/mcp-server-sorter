@@ -1,0 +1,50 @@
+name: Distribution
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  wheel:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.5.9"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: uv sync --frozen --python 3.13
+      - run: npm ci --prefix web
+      - run: uv run python scripts/build_release.py --version 0.1.0rc1
+      - run: uv run python scripts/build_release.py --skip-web
+      - run: uv export --no-dev --no-emit-project --no-hashes --format requirements-txt --output-file dist/requirements.txt
+      - run: "uv run --with pip python -m pip download --only-binary=:all: --dest dist/wheelhouse -r dist/requirements.txt"
+      - run: uv run python scripts/release_drill.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: distribution-${{ matrix.os }}
+          path: |
+            dist/*.whl
+            dist/release-drill.json
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t sorter:test .
+      - run: docker run -d --name sorter-check -p 127.0.0.1:8000:8000 sorter:test
+      - run: |
+          for attempt in $(seq 1 30); do
+            if curl --fail http://127.0.0.1:8000/health/ready; then break; fi
+            sleep 2
+          done
+          curl --fail http://127.0.0.1:8000/health/ready
+          curl --fail http://127.0.0.1:8000/ | grep 'id="root"'
+      - if: always()
+        run: docker logs sorter-check

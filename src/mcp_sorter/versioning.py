@@ -4,23 +4,24 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
 from sqlalchemy import Engine, text
 
 from mcp_sorter.artifacts import write_once
 from mcp_sorter.catalog import Catalog
+from mcp_sorter.models import VersionedModel
 from mcp_sorter.storage import canonical
 
 
-class Configuration(BaseModel):
+class Configuration(VersionedModel):
     model_config = ConfigDict(extra="forbid", frozen=True, allow_inf_nan=False)
     schema_version: Literal[1] = 1
     name: str = Field(default="Balanced", min_length=1, max_length=80)
     version: str = Field(default="1.0.0", pattern=r"^[0-9]+\.[0-9]+\.[0-9]+$")
     algorithm: Literal["bm25-evidence-v1"] = "bm25-evidence-v1"
-    name_weight: float = Field(default=5, gt=0, le=20)
-    description_weight: float = Field(default=1, gt=0, le=20)
-    tags_weight: float = Field(default=2, gt=0, le=20)
+    name_weight: float = Field(default=5, gt=0, le=20, strict=True)
+    description_weight: float = Field(default=1, gt=0, le=20, strict=True)
+    tags_weight: float = Field(default=2, gt=0, le=20, strict=True)
     prompt_version: Literal["evidence-order-v1"] = "evidence-order-v1"
     model_profiles_version: Literal["profiles-v1"] = "profiles-v1"
 

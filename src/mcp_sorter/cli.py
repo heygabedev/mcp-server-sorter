@@ -1,6 +1,7 @@
 import json
 import logging
 from pathlib import Path
+from typing import Literal
 
 import typer
 import uvicorn
@@ -34,6 +35,40 @@ backup_app = typer.Typer(no_args_is_help=True)
 app.add_typer(backup_app, name="backup")
 config_app = typer.Typer(no_args_is_help=True)
 app.add_typer(config_app, name="config")
+release_app = typer.Typer(no_args_is_help=True)
+app.add_typer(release_app, name="release")
+
+
+@release_app.command("stage")
+def stage_release(wheel: Path, sha256: str, wheelhouse: Path) -> None:
+    """Install a pinned wheel in an isolated environment using an offline wheelhouse."""
+    from mcp_sorter.releases import stage
+
+    typer.echo(stage(Settings(), wheel, sha256, wheelhouse).model_dump_json(indent=2))
+
+
+@release_app.command("activate")
+def select_release(sha256: str) -> None:
+    """With the service stopped, select a compatible staged wheel and retain a backup."""
+    from mcp_sorter.releases import activate_release
+
+    typer.echo(activate_release(Settings(), sha256).model_dump_json(indent=2))
+
+
+@release_app.command("rollback")
+def rollback_application() -> None:
+    """Select the previously pinned application artifact after compatibility checks."""
+    from mcp_sorter.releases import rollback_release
+
+    typer.echo(rollback_release(Settings()).model_dump_json(indent=2))
+
+
+@release_app.command("serve")
+def serve_pinned_release(port: int = 8000) -> None:
+    """Run the currently selected application artifact on loopback."""
+    from mcp_sorter.releases import serve_release
+
+    serve_release(Settings(), port)
 
 
 @config_app.command("create")
@@ -173,10 +208,10 @@ def probe_endpoint(endpoint: str) -> None:
 
 
 @app.command()
-def serve(port: int = 8000) -> None:
-    """Serve the application on the loopback interface."""
+def serve(port: int = 8000, host: Literal["127.0.0.1", "0.0.0.0"] = "127.0.0.1") -> None:
+    """Serve the application, binding to loopback unless a host is explicitly supplied."""
     logging.basicConfig(level=logging.INFO, format="%(message)s")
-    uvicorn.run(create_app(), host="127.0.0.1", port=port)
+    uvicorn.run(create_app(), host=host, port=port)
 
 
 @app.command()

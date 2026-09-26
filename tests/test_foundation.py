@@ -88,6 +88,8 @@ def test_serve_binds_only_loopback(monkeypatch):
     result = CliRunner().invoke(app, ["serve"])
     assert result.exit_code == 0
     assert calls[0]["host"] == "127.0.0.1"
+    assert CliRunner().invoke(app, ["serve", "--host", "0.0.0.0"]).exit_code == 0
+    assert calls[1]["host"] == "0.0.0.0"
 
 
 def test_telemetry_does_not_log_query_or_credentials(tmp_path, caplog):

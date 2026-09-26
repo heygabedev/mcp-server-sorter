@@ -4,7 +4,7 @@ Measurements were collected on 26 September 2026. Reports below describe execute
 
 ## Functional and security checks
 
-The Linux suite passed **120 tests**, including generated OpenAPI cases, real SQLite/FTS queries and migrations, property/metamorphic checks, API/CLI consistency, mocked external contracts, MCP stdio subprocess exchanges, concurrent job claims, process-crash recovery, and rollback drills. The Windows full suite and subsequent changed-module checks also passed.
+The Linux and Windows suites each passed **120 tests**, including generated OpenAPI cases, real SQLite/FTS queries and migrations, property/metamorphic checks, API/CLI consistency, mocked external contracts, MCP stdio subprocess exchanges, concurrent job claims, process-crash recovery, and rollback drills.
 
 Security cases cover untrusted model output and metadata, unknown evidence, SSRF destinations and redirects, malformed and oversized responses, cross-origin writes, secret/query redaction, unsafe backup paths, and changed artifacts during restoration. Network-denying tests intentionally produce a socket-blocking warning. The installed FastAPI/Starlette combination also emits a TestClient deprecation warning; neither warning is suppressed as a correctness failure.
 
@@ -57,7 +57,9 @@ The 500 ms p95 target at 10 RPS passed. Resident memory declined from 176.0 MB a
 
 ## Distribution and platform limits
 
-Real Windows and Linux wheel drills install two versioned artifacts from offline wheelhouses, serve the bundled interface over HTTP, switch versions, roll back, preserve the catalog, and verify query redaction. Unit/integration recovery tests additionally exercise saved-collection preservation, pre-restore backups, previous-schema upgrades, and incompatible targets.
+Real Windows and Linux wheel drills install two versioned artifacts from offline wheelhouses, serve the bundled interface over HTTP, switch versions, roll back, preserve the catalog, and verify query redaction. The [Windows](verification/wheel-drill-windows.json) and [Linux](verification/wheel-drill-linux.json) reports pin the exact release-wheel checksums. Unit/integration recovery tests additionally exercise saved-collection preservation, pre-restore backups, previous-schema upgrades, and incompatible targets.
+
+The [container drill](verification/container-drill.json) passed on Docker Engine 28.4.0 with Linux amd64 images. It exercised `0.1.0rc1 → 0.1.0 → 0.1.0rc1`, preserved a saved collection and catalog, checked backup compatibility before switching images, and verified the packaged interface, search, query redaction, loopback binding, and a read-only root filesystem. The compressed release archive was reloaded and its image ID checked. The documented Compose commands also passed a pinned-image rollback. The two versions share the same source; this verifies the mechanics, not compatibility with a historical deployment.
 
 macOS installation and test checks passed on the preceding packaging revision (`ff26ec7`). The final source has not been rerun on macOS. GitHub Actions was disabled at the owner's request after account billing prevented hosted jobs from starting. Historical red checks are retained; they are not counted as successful runs. The checked-in workflows remain available as executable definitions.
 

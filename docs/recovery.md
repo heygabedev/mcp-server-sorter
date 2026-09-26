@@ -72,3 +72,38 @@ mcp-sorter release serve
 This changes the application artifact, not the data history. Use the separate data-restore procedure when an older data snapshot is also needed. Do not downgrade a database manually or install an untrusted wheel merely because its checksum matches an untrusted manifest.
 
 The automated drill builds `0.1.0rc1` and `0.1.0` from the same current source to exercise installation, version selection, HTTP serving, and rollback mechanics. It is not evidence of compatibility with a previously deployed historical release.
+
+## Container image rollback
+
+The release includes a compressed Linux amd64 image archive and its checksum. `docker load --input ARCHIVE.tar.gz` restores its versioned local tag. Keep the previous archive and record its immutable image ID before upgrading:
+
+```sh
+docker image inspect mcp-server-sorter:0.1.0 --format '{{.Id}}'
+docker compose -p mcp-sorter exec sorter mcp-sorter backup create
+docker compose -p mcp-sorter stop
+```
+
+The backup command prints a directory beneath `/data/backups`. With the service stopped, check that the target image can read that backup's schema and artifacts. This example uses the volume name created by `docker compose -p mcp-sorter`:
+
+```sh
+docker run --rm --network none --mount type=volume,src=mcp-sorter_sorter-data,dst=/data,readonly --entrypoint mcp-sorter PREVIOUS_IMAGE_ID backup verify /data/backups/BACKUP_ID
+```
+
+Proceed only if verification succeeds. Choose the exact recorded ID rather than a movable tag, then recreate the service:
+
+```sh
+export SORTER_IMAGE=PREVIOUS_IMAGE_ID
+docker compose -p mcp-sorter up -d
+```
+
+PowerShell equivalent: `$env:SORTER_IMAGE = 'sha256:FULL_IMAGE_ID'`. The existing volume retains collections, catalogs, and configuration. An application rollback does not undo data changes. Do not use `docker compose down --volumes` during recovery.
+
+To reproduce the container drill, build both artifacts and run:
+
+```sh
+docker build --build-arg APP_VERSION=0.1.0rc1 -t mcp-server-sorter:0.1.0rc1 .
+docker build -t mcp-server-sorter:0.1.0 .
+uv run python scripts/container_drill.py
+```
+
+The drill creates and removes its own temporary volume. It checks the bundled interface, HTTP search, collection preservation, backup compatibility, query redaction, and an `rc1 → final → rc1` sequence using pinned image IDs. These artifacts share the same application source, so the same historical-compatibility limitation as the wheel drill applies.

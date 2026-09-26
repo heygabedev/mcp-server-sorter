@@ -23,6 +23,15 @@ Open **http://127.0.0.1:8000**. The wheel contains the interface; Node is needed
 
 An already-built wheel can be launched with the last command alone. The [release assets](https://github.com/heygabedev/mcp-server-sorter/releases) include artifact checksums. Fully offline installations use a previously downloaded wheelhouse; see [recovery and artifact management](docs/recovery.md).
 
+Alternatively, download the Linux amd64 container archive from the same release, verify its checksum, and load it locally:
+
+```sh
+docker load --input mcp-server-sorter-0.1.0-linux-amd64.tar.gz
+docker compose -p mcp-sorter up -d
+```
+
+Run Compose from this repository. It binds to `127.0.0.1:8000`, stores data in a named volume, and uses a read-only container filesystem. The archive needs no registry credentials. Only Linux amd64 images are verified; native wheel checks cover Windows and Linux. See [container recovery](docs/recovery.md#container-image-rollback) for backup and pinned-image rollback.
+
 ## Walk through the demo
 
 1. **Discover:** search for `github pull requests` or `local database`, apply filters, and open a record to inspect its evidence. Deprecated records are excluded by default; unknown metadata stays unknown.

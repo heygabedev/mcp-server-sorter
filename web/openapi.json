@@ -2922,6 +2922,12 @@
             "title": "Execution Mode",
             "default": "fixture"
           },
+          "dataset_kind": {
+            "type": "string",
+            "enum": ["synthetic-regression", "synthetic-challenge"],
+            "title": "Dataset Kind",
+            "default": "synthetic-regression"
+          },
           "profile": {
             "type": "string",
             "title": "Profile",

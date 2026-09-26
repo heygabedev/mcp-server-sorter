@@ -531,6 +531,12 @@ export interface components {
        */
       execution_mode: string;
       /**
+       * Dataset Kind
+       * @default synthetic-regression
+       * @enum {string}
+       */
+      dataset_kind: 'synthetic-regression' | 'synthetic-challenge';
+      /**
        * Profile
        * @default baseline
        */

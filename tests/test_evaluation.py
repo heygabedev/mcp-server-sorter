@@ -61,6 +61,27 @@ def test_golden_dataset_shape_and_leakage_guards():
             validate_golden(invalid)
 
 
+def test_challenge_cases_are_separate_diagnostic_judgments(runtime):
+    dataset = load_golden("challenge")
+    assert len(dataset.cases) == 60
+    assert sum(c.split == "development" for c in dataset.cases) == 20
+    assert sum(c.split == "heldout" for c in dataset.cases) == 40
+    assert any(len(c.relevance) > 1 for c in dataset.cases)
+    assert {grade for c in dataset.cases for grade in c.relevance.values()} == {1, 2, 3}
+    assert all(c.review_status == "fixture-authored" and c.rationale for c in dataset.cases)
+    report = evaluate(runtime.catalog, dataset)
+    again = evaluate(runtime.catalog, dataset)
+    assert [c.result_ids for c in report.cases] == [c.result_ids for c in again.cases]
+    assert report.summary["abstention_accuracy"] < 1
+    comparison = compare_reports(report, again)
+    assert comparison["quality_is_diagnostic"] and comparison["passes_regression_gate"]
+    assert comparison["gate_scope"] == "integrity-only"
+    again.cases[0].invalid_evidence_references = 1
+    assert not compare_reports(report, again)["passes_regression_gate"]
+    with pytest.raises(ValueError, match="identical datasets"):
+        compare_reports(evaluate(runtime.catalog), report)
+
+
 def test_golden_run_is_repeatable_and_cites_only_known_evidence(runtime):
     first = evaluate(runtime.catalog)
     second = evaluate(runtime.catalog)

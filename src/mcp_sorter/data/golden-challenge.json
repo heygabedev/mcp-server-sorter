@@ -1,0 +1,1207 @@
+{
+  "schema_version": 1,
+  "version": "golden-challenge-v1",
+  "kind": "synthetic-challenge",
+  "notice": "Synthetic challenge cases expose retrieval limits; quality scores are diagnostic, not release gates. Live model quality is unmeasured.",
+  "catalog_source_sha256": "c813e8fc0575d1ef3963c0db99fe33c16d5dc07fd215f30a287a0eded1be228d",
+  "cases": [
+    {
+      "id": "team-handbook.1",
+      "intent_id": "team-handbook",
+      "split": "development",
+      "query": "Where can our team keep its onboarding knowledge?",
+      "filters": {},
+      "relevance": {
+        "demo/notion": 3,
+        "demo/drive": 1
+      },
+      "expected_top": [
+        "demo/notion"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.notion.capabilities",
+        "fixture.drive.capabilities"
+      ],
+      "rationale": "A wiki is the best fit; document storage is a limited alternative.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "team-handbook.2",
+      "intent_id": "team-handbook",
+      "split": "development",
+      "query": "Find a shared home for internal notes and wiki pages.",
+      "filters": {},
+      "relevance": {
+        "demo/notion": 3,
+        "demo/drive": 1
+      },
+      "expected_top": [
+        "demo/notion"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.notion.capabilities",
+        "fixture.drive.capabilities"
+      ],
+      "rationale": "A wiki is the best fit; document storage is a limited alternative.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "discussion-context.1",
+      "intent_id": "discussion-context",
+      "split": "development",
+      "query": "I need the conversation behind a team decision.",
+      "filters": {},
+      "relevance": {
+        "demo/slack": 3,
+        "demo/mail": 1
+      },
+      "expected_top": [
+        "demo/slack"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.slack.capabilities",
+        "fixture.mail.capabilities"
+      ],
+      "rationale": "Threaded channel discussions fit Slack; email is a weaker communication alternative.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "discussion-context.2",
+      "intent_id": "discussion-context",
+      "split": "development",
+      "query": "Find tools for reviewing threaded workplace messages.",
+      "filters": {},
+      "relevance": {
+        "demo/slack": 3,
+        "demo/mail": 1
+      },
+      "expected_top": [
+        "demo/slack"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.slack.capabilities",
+        "fixture.mail.capabilities"
+      ],
+      "rationale": "Threaded channel discussions fit Slack; email is a weaker communication alternative.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "shared-documents.1",
+      "intent_id": "shared-documents",
+      "split": "development",
+      "query": "Locate shared documents and who can access them.",
+      "filters": {
+        "deployment": "remote"
+      },
+      "relevance": {
+        "demo/drive": 3,
+        "demo/notion": 1
+      },
+      "expected_top": [
+        "demo/drive"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.drive.capabilities",
+        "fixture.notion.capabilities"
+      ],
+      "rationale": "Drive explicitly declares shared documents and permissions; a wiki is a weaker alternative.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "shared-documents.2",
+      "intent_id": "shared-documents",
+      "split": "development",
+      "query": "We need remote storage for collaborative documents.",
+      "filters": {
+        "deployment": "remote"
+      },
+      "relevance": {
+        "demo/drive": 3,
+        "demo/notion": 1
+      },
+      "expected_top": [
+        "demo/drive"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.drive.capabilities",
+        "fixture.notion.capabilities"
+      ],
+      "rationale": "Drive explicitly declares shared documents and permissions; a wiki is a weaker alternative.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "spreadsheet-calculation.1",
+      "intent_id": "spreadsheet-calculation",
+      "split": "development",
+      "query": "Which integration understands workbook formulas?",
+      "filters": {},
+      "relevance": {
+        "demo/sheets": 3
+      },
+      "expected_top": [
+        "demo/sheets"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.sheets.capabilities"
+      ],
+      "rationale": "Only Sheets declares spreadsheet cells and formulas.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "spreadsheet-calculation.2",
+      "intent_id": "spreadsheet-calculation",
+      "split": "development",
+      "query": "Help me inspect calculations in spreadsheet cells.",
+      "filters": {},
+      "relevance": {
+        "demo/sheets": 3
+      },
+      "expected_top": [
+        "demo/sheets"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.sheets.capabilities"
+      ],
+      "rationale": "Only Sheets declares spreadsheet cells and formulas.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "meeting-availability.1",
+      "intent_id": "meeting-availability",
+      "split": "development",
+      "query": "Find an OAuth tool for checking appointment availability.",
+      "filters": {
+        "auth": "oauth"
+      },
+      "relevance": {
+        "demo/calendar": 3
+      },
+      "expected_top": [
+        "demo/calendar"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.calendar.capabilities"
+      ],
+      "rationale": "Calendar declares events, availability and appointments.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "meeting-availability.2",
+      "intent_id": "meeting-availability",
+      "split": "development",
+      "query": "Which connector can inspect calendar events before booking meetings?",
+      "filters": {
+        "auth": "oauth"
+      },
+      "relevance": {
+        "demo/calendar": 3
+      },
+      "expected_top": [
+        "demo/calendar"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.calendar.capabilities"
+      ],
+      "rationale": "Calendar declares events, availability and appointments.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "inbox-review.1",
+      "intent_id": "inbox-review",
+      "split": "development",
+      "query": "I need to review unanswered inbox correspondence.",
+      "filters": {},
+      "relevance": {
+        "demo/mail": 3
+      },
+      "expected_top": [
+        "demo/mail"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.mail.capabilities"
+      ],
+      "rationale": "Mail declares inbox correspondence; channel chat is not an inbox.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "inbox-review.2",
+      "intent_id": "inbox-review",
+      "split": "development",
+      "query": "Help me inspect my email messages.",
+      "filters": {},
+      "relevance": {
+        "demo/mail": 3
+      },
+      "expected_top": [
+        "demo/mail"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.mail.capabilities"
+      ],
+      "rationale": "Mail declares inbox correspondence; channel chat is not an inbox.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "web-discovery.1",
+      "intent_id": "web-discovery",
+      "split": "development",
+      "query": "Discover websites containing useful background material.",
+      "filters": {},
+      "relevance": {
+        "demo/search": 3,
+        "demo/fetch": 1
+      },
+      "expected_top": [
+        "demo/search"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.search.capabilities",
+        "fixture.fetch.capabilities"
+      ],
+      "rationale": "Search discovers websites; Fetch retrieves content only after a URL is known.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "web-discovery.2",
+      "intent_id": "web-discovery",
+      "split": "development",
+      "query": "Find sources on the web before retrieving their articles.",
+      "filters": {},
+      "relevance": {
+        "demo/search": 3,
+        "demo/fetch": 1
+      },
+      "expected_top": [
+        "demo/search"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.search.capabilities",
+        "fixture.fetch.capabilities"
+      ],
+      "rationale": "Search discovers websites; Fetch retrieves content only after a URL is known.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "known-url-content.1",
+      "intent_id": "known-url-content",
+      "split": "development",
+      "query": "Retrieve an article from its URL without credentials.",
+      "filters": {
+        "auth": "none"
+      },
+      "relevance": {
+        "demo/fetch": 3,
+        "demo/browser": 1
+      },
+      "expected_top": [
+        "demo/fetch"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.fetch.capabilities",
+        "fixture.browser.capabilities"
+      ],
+      "rationale": "Fetch retrieves known URLs; Browser can inspect pages but has a different emphasis.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "known-url-content.2",
+      "intent_id": "known-url-content",
+      "split": "development",
+      "query": "Read page content at a known address using a local tool.",
+      "filters": {
+        "auth": "none"
+      },
+      "relevance": {
+        "demo/fetch": 3,
+        "demo/browser": 1
+      },
+      "expected_top": [
+        "demo/fetch"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.fetch.capabilities",
+        "fixture.browser.capabilities"
+      ],
+      "rationale": "Fetch retrieves known URLs; Browser can inspect pages but has a different emphasis.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "academic-literature.1",
+      "intent_id": "academic-literature",
+      "split": "development",
+      "query": "Find academic publications and inspect their abstracts.",
+      "filters": {
+        "category": "research"
+      },
+      "relevance": {
+        "demo/arxiv": 3,
+        "demo/search": 1
+      },
+      "expected_top": [
+        "demo/arxiv"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.arxiv.capabilities",
+        "fixture.search.capabilities"
+      ],
+      "rationale": "arXiv explicitly declares academic papers and abstracts; general search is less specific.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "academic-literature.2",
+      "intent_id": "academic-literature",
+      "split": "development",
+      "query": "I need research papers, not just arbitrary websites.",
+      "filters": {
+        "category": "research"
+      },
+      "relevance": {
+        "demo/arxiv": 3,
+        "demo/search": 1
+      },
+      "expected_top": [
+        "demo/arxiv"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.arxiv.capabilities",
+        "fixture.search.capabilities"
+      ],
+      "rationale": "arXiv explicitly declares academic papers and abstracts; general search is less specific.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "semantic-memory.1",
+      "intent_id": "semantic-memory",
+      "split": "development",
+      "query": "Keep relationships between entities across sessions.",
+      "filters": {
+        "deployment": "local"
+      },
+      "relevance": {
+        "demo/memory": 3
+      },
+      "expected_top": [
+        "demo/memory"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.memory.capabilities"
+      ],
+      "rationale": "Memory declares persistent entities and relationships, rather than document storage.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "semantic-memory.2",
+      "intent_id": "semantic-memory",
+      "split": "development",
+      "query": "Find a local persistent knowledge graph.",
+      "filters": {
+        "deployment": "local"
+      },
+      "relevance": {
+        "demo/memory": 3
+      },
+      "expected_top": [
+        "demo/memory"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.memory.capabilities"
+      ],
+      "rationale": "Memory declares persistent entities and relationships, rather than document storage.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "code-review.1",
+      "intent_id": "code-review",
+      "split": "heldout",
+      "query": "Inspect proposed code changes before the team accepts them.",
+      "filters": {},
+      "relevance": {
+        "demo/github": 3,
+        "demo/git": 1
+      },
+      "expected_top": [
+        "demo/github"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.github.capabilities",
+        "fixture.git.capabilities"
+      ],
+      "rationale": "GitHub declares pull requests and code reviews; local Git diffs are a partial alternative.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "code-review.2",
+      "intent_id": "code-review",
+      "split": "heldout",
+      "query": "Where can I review pull requests against repositories?",
+      "filters": {},
+      "relevance": {
+        "demo/github": 3,
+        "demo/git": 1
+      },
+      "expected_top": [
+        "demo/github"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.github.capabilities",
+        "fixture.git.capabilities"
+      ],
+      "rationale": "GitHub declares pull requests and code reviews; local Git diffs are a partial alternative.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "local-branch-history.1",
+      "intent_id": "local-branch-history",
+      "split": "heldout",
+      "query": "Inspect branch changes on my machine without credentials.",
+      "filters": {
+        "deployment": "local",
+        "auth": "none"
+      },
+      "relevance": {
+        "demo/git": 3
+      },
+      "expected_top": [
+        "demo/git"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.git.capabilities"
+      ],
+      "rationale": "Git declares commits, branches, diffs and history without remote authentication.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "local-branch-history.2",
+      "intent_id": "local-branch-history",
+      "split": "heldout",
+      "query": "Show tools for reviewing local commit history and diffs.",
+      "filters": {
+        "deployment": "local",
+        "auth": "none"
+      },
+      "relevance": {
+        "demo/git": 3
+      },
+      "expected_top": [
+        "demo/git"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.git.capabilities"
+      ],
+      "rationale": "Git declares commits, branches, diffs and history without remote authentication.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "iteration-planning.1",
+      "intent_id": "iteration-planning",
+      "split": "heldout",
+      "query": "Organize engineering work into short planning cycles.",
+      "filters": {},
+      "relevance": {
+        "demo/linear": 3,
+        "demo/jira": 2,
+        "demo/trello": 1
+      },
+      "expected_top": [
+        "demo/linear"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.linear.capabilities",
+        "fixture.jira.capabilities",
+        "fixture.trello.capabilities"
+      ],
+      "rationale": "Linear declares engineering cycles; Jira sprints and Trello boards are graded planning alternatives.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "iteration-planning.2",
+      "intent_id": "iteration-planning",
+      "split": "heldout",
+      "query": "Compare issue and sprint planning tools for a development team.",
+      "filters": {},
+      "relevance": {
+        "demo/linear": 3,
+        "demo/jira": 2,
+        "demo/trello": 1
+      },
+      "expected_top": [
+        "demo/linear"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.linear.capabilities",
+        "fixture.jira.capabilities",
+        "fixture.trello.capabilities"
+      ],
+      "rationale": "Linear declares engineering cycles; Jira sprints and Trello boards are graded planning alternatives.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "visual-kanban.1",
+      "intent_id": "visual-kanban",
+      "split": "heldout",
+      "query": "Track work as cards moving across a board.",
+      "filters": {},
+      "relevance": {
+        "demo/trello": 3,
+        "demo/jira": 1
+      },
+      "expected_top": [
+        "demo/trello"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.trello.capabilities",
+        "fixture.jira.capabilities"
+      ],
+      "rationale": "Trello explicitly declares cards and kanban; Jira backlog planning is a partial alternative.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "visual-kanban.2",
+      "intent_id": "visual-kanban",
+      "split": "heldout",
+      "query": "Find a tool for a visual kanban workflow.",
+      "filters": {},
+      "relevance": {
+        "demo/trello": 3,
+        "demo/jira": 1
+      },
+      "expected_top": [
+        "demo/trello"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.trello.capabilities",
+        "fixture.jira.capabilities"
+      ],
+      "rationale": "Trello explicitly declares cards and kanban; Jira backlog planning is a partial alternative.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "design-inspection.1",
+      "intent_id": "design-inspection",
+      "split": "heldout",
+      "query": "Inspect reusable visual components and their layouts.",
+      "filters": {},
+      "relevance": {
+        "demo/figma": 3
+      },
+      "expected_top": [
+        "demo/figma"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.figma.capabilities"
+      ],
+      "rationale": "Figma declares design frames, components and layouts.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "design-inspection.2",
+      "intent_id": "design-inspection",
+      "split": "heldout",
+      "query": "Find tools that understand frames in a design file.",
+      "filters": {},
+      "relevance": {
+        "demo/figma": 3
+      },
+      "expected_top": [
+        "demo/figma"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.figma.capabilities"
+      ],
+      "rationale": "Figma declares design frames, components and layouts.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "local-web-inspection.1",
+      "intent_id": "local-web-inspection",
+      "split": "heldout",
+      "query": "Capture a screenshot while inspecting a web page locally.",
+      "filters": {
+        "deployment": "local"
+      },
+      "relevance": {
+        "demo/browser": 3,
+        "demo/fetch": 1
+      },
+      "expected_top": [
+        "demo/browser"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.browser.capabilities",
+        "fixture.fetch.capabilities"
+      ],
+      "rationale": "Browser declares screenshots and page inspection; Fetch provides article content only.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "local-web-inspection.2",
+      "intent_id": "local-web-inspection",
+      "split": "heldout",
+      "query": "Inspect a website visually using a tool on my machine.",
+      "filters": {
+        "deployment": "local"
+      },
+      "relevance": {
+        "demo/browser": 3,
+        "demo/fetch": 1
+      },
+      "expected_top": [
+        "demo/browser"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.browser.capabilities",
+        "fixture.fetch.capabilities"
+      ],
+      "rationale": "Browser declares screenshots and page inspection; Fetch provides article content only.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "local-file-tree.1",
+      "intent_id": "local-file-tree",
+      "split": "heldout",
+      "query": "Inspect the directory tree on my disk.",
+      "filters": {
+        "auth": "none"
+      },
+      "relevance": {
+        "demo/filesystem": 3
+      },
+      "expected_top": [
+        "demo/filesystem"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.filesystem.capabilities"
+      ],
+      "rationale": "Filesystem declares disk folders and directories without authentication.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "local-file-tree.2",
+      "intent_id": "local-file-tree",
+      "split": "heldout",
+      "query": "Find a credentials-free tool for local files and folders.",
+      "filters": {
+        "auth": "none"
+      },
+      "relevance": {
+        "demo/filesystem": 3
+      },
+      "expected_top": [
+        "demo/filesystem"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.filesystem.capabilities"
+      ],
+      "rationale": "Filesystem declares disk folders and directories without authentication.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "embedded-data.1",
+      "intent_id": "embedded-data",
+      "split": "heldout",
+      "query": "Query embedded tables on my laptop.",
+      "filters": {
+        "category": "database",
+        "deployment": "local"
+      },
+      "relevance": {
+        "demo/sqlite": 3
+      },
+      "expected_top": [
+        "demo/sqlite"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.sqlite.capabilities"
+      ],
+      "rationale": "The active SQLite fixture is the supported local database; the legacy entry is deprecated.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "embedded-data.2",
+      "intent_id": "embedded-data",
+      "split": "heldout",
+      "query": "Find a maintained local database connector for sqlite data.",
+      "filters": {
+        "category": "database",
+        "deployment": "local"
+      },
+      "relevance": {
+        "demo/sqlite": 3
+      },
+      "expected_top": [
+        "demo/sqlite"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.sqlite.capabilities"
+      ],
+      "rationale": "The active SQLite fixture is the supported local database; the legacy entry is deprecated.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "relational-transactions.1",
+      "intent_id": "relational-transactions",
+      "split": "heldout",
+      "query": "Inspect relational schemas and database transactions remotely.",
+      "filters": {
+        "deployment": "remote"
+      },
+      "relevance": {
+        "demo/postgres": 3
+      },
+      "expected_top": [
+        "demo/postgres"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.postgres.capabilities"
+      ],
+      "rationale": "PostgreSQL explicitly declares relational SQL schemas and transactions.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "relational-transactions.2",
+      "intent_id": "relational-transactions",
+      "split": "heldout",
+      "query": "Find a remote connector for transactional SQL data.",
+      "filters": {
+        "deployment": "remote"
+      },
+      "relevance": {
+        "demo/postgres": 3
+      },
+      "expected_top": [
+        "demo/postgres"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.postgres.capabilities"
+      ],
+      "rationale": "PostgreSQL explicitly declares relational SQL schemas and transactions.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "expiring-cache.1",
+      "intent_id": "expiring-cache",
+      "split": "heldout",
+      "query": "Inspect cached values before their expiry.",
+      "filters": {},
+      "relevance": {
+        "demo/redis": 3
+      },
+      "expected_top": [
+        "demo/redis"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.redis.capabilities"
+      ],
+      "rationale": "Redis declares cache keys, expiry and values.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "expiring-cache.2",
+      "intent_id": "expiring-cache",
+      "split": "heldout",
+      "query": "Which connector handles short-lived key-value data?",
+      "filters": {},
+      "relevance": {
+        "demo/redis": 3
+      },
+      "expected_top": [
+        "demo/redis"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.redis.capabilities"
+      ],
+      "rationale": "Redis declares cache keys, expiry and values.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "indexed-analytics.1",
+      "intent_id": "indexed-analytics",
+      "split": "heldout",
+      "query": "Aggregate search results across fulltext indexes.",
+      "filters": {
+        "category": "database"
+      },
+      "relevance": {
+        "demo/elastic": 3,
+        "demo/postgres": 1
+      },
+      "expected_top": [
+        "demo/elastic"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.elastic.capabilities",
+        "fixture.postgres.capabilities"
+      ],
+      "rationale": "Elasticsearch declares indexed fulltext aggregation; SQL is a partial analytics alternative.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "indexed-analytics.2",
+      "intent_id": "indexed-analytics",
+      "split": "heldout",
+      "query": "Compare database tools for indexed text analytics.",
+      "filters": {
+        "category": "database"
+      },
+      "relevance": {
+        "demo/elastic": 3,
+        "demo/postgres": 1
+      },
+      "expected_top": [
+        "demo/elastic"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.elastic.capabilities",
+        "fixture.postgres.capabilities"
+      ],
+      "rationale": "Elasticsearch declares indexed fulltext aggregation; SQL is a partial analytics alternative.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "exception-investigation.1",
+      "intent_id": "exception-investigation",
+      "split": "heldout",
+      "query": "Find the stacktrace behind a reported application error.",
+      "filters": {},
+      "relevance": {
+        "demo/sentry": 3,
+        "demo/grafana": 1
+      },
+      "expected_top": [
+        "demo/sentry"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.sentry.capabilities",
+        "fixture.grafana.capabilities"
+      ],
+      "rationale": "Sentry declares exceptions and stacktraces; Grafana metrics provide less direct evidence.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "exception-investigation.2",
+      "intent_id": "exception-investigation",
+      "split": "heldout",
+      "query": "Investigate exceptions rather than only dashboard metrics.",
+      "filters": {},
+      "relevance": {
+        "demo/sentry": 3,
+        "demo/grafana": 1
+      },
+      "expected_top": [
+        "demo/sentry"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.sentry.capabilities",
+        "fixture.grafana.capabilities"
+      ],
+      "rationale": "Sentry declares exceptions and stacktraces; Grafana metrics provide less direct evidence.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "metrics-dashboard.1",
+      "intent_id": "metrics-dashboard",
+      "split": "heldout",
+      "query": "Inspect service metrics on an observability dashboard.",
+      "filters": {},
+      "relevance": {
+        "demo/grafana": 3,
+        "demo/sentry": 1
+      },
+      "expected_top": [
+        "demo/grafana"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.grafana.capabilities",
+        "fixture.sentry.capabilities"
+      ],
+      "rationale": "Grafana declares dashboards and metrics; Sentry provides error tracking rather than general metrics.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "metrics-dashboard.2",
+      "intent_id": "metrics-dashboard",
+      "split": "heldout",
+      "query": "Compare tools for monitoring trends and application errors.",
+      "filters": {},
+      "relevance": {
+        "demo/grafana": 3,
+        "demo/sentry": 1
+      },
+      "expected_top": [
+        "demo/grafana"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.grafana.capabilities",
+        "fixture.sentry.capabilities"
+      ],
+      "rationale": "Grafana declares dashboards and metrics; Sentry provides error tracking rather than general metrics.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "local-container-inspection.1",
+      "intent_id": "local-container-inspection",
+      "split": "heldout",
+      "query": "Inspect container images running on my workstation.",
+      "filters": {
+        "deployment": "local"
+      },
+      "relevance": {
+        "demo/docker": 3
+      },
+      "expected_top": [
+        "demo/docker"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.docker.capabilities"
+      ],
+      "rationale": "Docker declares local containers, images and workloads.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "local-container-inspection.2",
+      "intent_id": "local-container-inspection",
+      "split": "heldout",
+      "query": "Find a local integration for examining container workloads.",
+      "filters": {
+        "deployment": "local"
+      },
+      "relevance": {
+        "demo/docker": 3
+      },
+      "expected_top": [
+        "demo/docker"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.docker.capabilities"
+      ],
+      "rationale": "Docker declares local containers, images and workloads.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "cluster-inspection.1",
+      "intent_id": "cluster-inspection",
+      "split": "heldout",
+      "query": "Inspect pods across a deployment cluster.",
+      "filters": {
+        "auth": "api_key"
+      },
+      "relevance": {
+        "demo/kubernetes": 3
+      },
+      "expected_top": [
+        "demo/kubernetes"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.kubernetes.capabilities"
+      ],
+      "rationale": "Kubernetes declares remote pods, clusters and deployments.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "cluster-inspection.2",
+      "intent_id": "cluster-inspection",
+      "split": "heldout",
+      "query": "Find an API-key connector for cluster workloads.",
+      "filters": {
+        "auth": "api_key"
+      },
+      "relevance": {
+        "demo/kubernetes": 3
+      },
+      "expected_top": [
+        "demo/kubernetes"
+      ],
+      "expect_abstention": false,
+      "evidence_ids": [
+        "fixture.kubernetes.capabilities"
+      ],
+      "rationale": "Kubernetes declares remote pods, clusters and deployments.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "unsupported-mail-delivery.1",
+      "intent_id": "unsupported-mail-delivery",
+      "split": "heldout",
+      "query": "Send an email message with a file attachment.",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "The Mail fixture declares inbox inspection, but no sending capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "unsupported-mail-delivery.2",
+      "intent_id": "unsupported-mail-delivery",
+      "split": "heldout",
+      "query": "Deliver outgoing correspondence through the mail connector.",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "The Mail fixture declares inbox inspection, but no sending capability.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "unsupported-database-recovery.1",
+      "intent_id": "unsupported-database-recovery",
+      "split": "heldout",
+      "query": "Restore postgres transactions from last night after data loss.",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "Database fixtures do not declare point-in-time recovery or backup restoration.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "unsupported-database-recovery.2",
+      "intent_id": "unsupported-database-recovery",
+      "split": "heldout",
+      "query": "Recover an embedded database from a historical backup.",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "Database fixtures do not declare point-in-time recovery or backup restoration.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "unsupported-calendar-write.1",
+      "intent_id": "unsupported-calendar-write",
+      "split": "heldout",
+      "query": "Create calendar appointments and email invitations to attendees.",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "Calendar declares events and availability, but no event creation or invitation delivery.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "unsupported-calendar-write.2",
+      "intent_id": "unsupported-calendar-write",
+      "split": "heldout",
+      "query": "Book a new meeting and send invites through the calendar connector.",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "Calendar declares events and availability, but no event creation or invitation delivery.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "impossible-local-design.1",
+      "intent_id": "impossible-local-design",
+      "split": "heldout",
+      "query": "Inspect design frames locally without any credentials.",
+      "filters": {
+        "deployment": "local",
+        "auth": "none"
+      },
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "The design fixture is remote with OAuth; none satisfies both requested constraints.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "impossible-local-design.2",
+      "intent_id": "impossible-local-design",
+      "split": "heldout",
+      "query": "Find a local credentials-free connector for design components.",
+      "filters": {
+        "deployment": "local",
+        "auth": "none"
+      },
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "The design fixture is remote with OAuth; none satisfies both requested constraints.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "unsupported-weather-control.1",
+      "intent_id": "unsupported-weather-control",
+      "split": "heldout",
+      "query": "Use weather forecasts to switch my irrigation system on.",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "Weather declares forecasts and temperature, not control of devices or irrigation.",
+      "review_status": "fixture-authored"
+    },
+    {
+      "id": "unsupported-weather-control.2",
+      "intent_id": "unsupported-weather-control",
+      "split": "heldout",
+      "query": "Read temperature forecasts and control my home thermostat.",
+      "filters": {},
+      "relevance": {},
+      "expected_top": [],
+      "expect_abstention": true,
+      "evidence_ids": [],
+      "rationale": "Weather declares forecasts and temperature, not control of devices or irrigation.",
+      "review_status": "fixture-authored"
+    }
+  ]
+}

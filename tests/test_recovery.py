@@ -157,7 +157,18 @@ def test_backup_rejects_linked_artifacts(runtime, tmp_path):
 
 @pytest.mark.parametrize(
     "case",
-    ["checksum", "missing", "path", "digest", "schema", "state", "active", "revision", "report"],
+    [
+        "checksum",
+        "missing",
+        "path",
+        "unexpected",
+        "digest",
+        "schema",
+        "state",
+        "active",
+        "revision",
+        "report",
+    ],
 )
 def test_backup_validation_rejects_unsafe_or_incomplete_bundles(runtime, case):
     enqueue(runtime, JobRequest(kind="evaluation", idempotency_key="report"))
@@ -172,6 +183,10 @@ def test_backup_validation_rejects_unsafe_or_incomplete_bundles(runtime, case):
         (path / first).unlink()
     elif case == "path":
         data["files"]["../escape"] = "0" * 64
+    elif case == "unexpected":
+        unexpected = path / "unrecognized.json"
+        unexpected.write_text("{}")
+        data["files"][unexpected.name] = digest(unexpected)
     elif case == "digest":
         data["files"][first] = "invalid"
     elif case == "schema":

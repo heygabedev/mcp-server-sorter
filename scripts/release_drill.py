@@ -47,7 +47,10 @@ def smoke(settings, identifier, expected):
                     if time.monotonic() > deadline or process.poll() is not None:
                         raise RuntimeError("Installed service did not become ready")
                     time.sleep(0.1)
-                assert client.get("/health/live").json()["version"] == expected
+                assert (
+                    client.get("/health/live?secret=private-drill-marker").json()["version"]
+                    == expected
+                )
                 assert '<div id="root">' in client.get("/").text
                 assert (
                     client.post("/api/v1/rankings", json={"query": "github"}).json()["results"][0][
@@ -88,6 +91,7 @@ def main():
         rolled = rollback_release(settings)
         assert rolled.active == records[0].sha256
         assert smoke(settings, rolled.active, "0.1.0rc1") == snapshot
+        assert "private-drill-marker" not in (settings.data_dir / "drill.log").read_text("utf-8")
         report = {
             "platform": platform.platform(),
             "python": platform.python_version(),
@@ -95,6 +99,7 @@ def main():
             "rollback": "passed",
             "packaged_ui": "passed",
             "offline_install": "passed",
+            "query_redaction": "passed",
             "snapshot_preserved": snapshot,
             "artifacts": [record.sha256 for record in records],
         }

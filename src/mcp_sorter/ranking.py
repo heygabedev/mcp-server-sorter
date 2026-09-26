@@ -1,4 +1,3 @@
-import json
 import re
 import sqlite3
 from datetime import datetime
@@ -72,25 +71,50 @@ def rank(catalog: Catalog, request: RankRequest) -> Ranking:
     policy = Configurations(catalog.directory.parent, catalog.engine).load(configuration)
     expression = query_expression(request.query)
     with catalog.connect(snapshot) as db:
-        manifest = json.loads(db.execute("SELECT payload FROM manifest").fetchone()[0])
+        as_of = str(
+            db.execute("SELECT json_extract(payload,'$.as_of') FROM manifest").fetchone()[0]
+        )
+        timestamp = datetime.fromisoformat(as_of).timestamp()
+        db.create_function(
+            "freshness",
+            1,
+            lambda value: min(datetime.fromisoformat(value).timestamp(), timestamp),
+            deterministic=True,
+        )
+        conditions = []
+        parameters: list[object] = []
+        # Only fixed field names enter SQL; every user-provided value is bound.
+        for field in ("category", "transport", "auth", "deployment", "license"):
+            value = getattr(request.filters, field)
+            if value is not None:
+                conditions.append(f"json_extract(servers.payload,'$.{field}') = ?")
+                parameters.append(value)
+        if not request.filters.include_deprecated:
+            conditions.append("json_extract(servers.payload,'$.status') != 'deprecated'")
+        score = "0.0"
+        source = "servers"
+        if expression:
+            score = "bm25(search,0,?,?,?)"
+            parameters = [
+                policy.name_weight,
+                policy.description_weight,
+                policy.tags_weight,
+                expression,
+                *parameters,
+            ]
+            source = "search JOIN servers ON servers.id=search.id"
+            conditions.insert(0, "search MATCH ?")
+        where = " AND ".join(conditions) or "1"
         if request.query.strip() and not expression:
             rows = []
-        elif expression:
-            rows = db.execute(
-                "SELECT servers.payload, bm25(search,0,?,?,?) FROM search "
-                "JOIN servers ON servers.id=search.id WHERE search MATCH ?",
-                (policy.name_weight, policy.description_weight, policy.tags_weight, expression),
-            ).fetchall()
         else:
-            rows = db.execute("SELECT payload, 0.0 FROM servers ORDER BY id").fetchall()
-    as_of = datetime.fromisoformat(manifest["as_of"])
-    candidates: list[tuple[float, int, float, str, ServerRecord]] = []
-    for payload, score in rows:
-        server = ServerRecord.model_validate_json(payload)
-        if request.filters.matches(server):
-            freshness = min(server.updated_at.timestamp(), as_of.timestamp())
-            candidates.append((score, -len(server.evidence), -freshness, server.id, server))
-    candidates.sort(key=lambda item: item[:4])
+            rows = db.execute(
+                f"SELECT servers.payload, {score} AS score FROM {source} WHERE {where} "
+                "ORDER BY score, "
+                "json_array_length(json_extract(servers.payload,'$.evidence')) DESC, "
+                "freshness(json_extract(servers.payload,'$.updated_at')) DESC, servers.id LIMIT ?",
+                (*parameters, request.limit),
+            ).fetchall()
     results = [
         RankedServer(
             server=server,
@@ -101,12 +125,13 @@ def rank(catalog: Catalog, request: RankRequest) -> Ranking:
             ],
             evidence_ids=[item.id for item in server.evidence],
         )
-        for score, _, _, _, server in candidates[: request.limit]
+        for payload, score in rows
+        for server in [ServerRecord.model_validate_json(payload)]
     ]
     return Ranking(
         snapshot=snapshot,
         configuration=configuration,
-        as_of=manifest["as_of"],
+        as_of=as_of,
         query=request.query,
         filters=request.filters,
         results=results,

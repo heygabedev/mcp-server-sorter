@@ -19,7 +19,7 @@ def main() -> None:
                 "snapshot": report.provenance["snapshot"],
                 "policy_version": report.provenance["policy_version"],
                 "metrics": {
-                    key: value for key, value in report.summary.items() if key != "mean_latency_ms"
+                    key: value for key, value in report.summary.items() if "latency" not in key
                 },
                 "notice": report.notice,
             }

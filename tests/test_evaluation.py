@@ -32,6 +32,10 @@ def test_metrics_against_analytical_examples():
     assert ranking_metrics([], {})["ndcg_at_5"] is None
     with pytest.raises(ValueError):
         ranking_metrics(["duplicate", "duplicate"], {"duplicate": 1})
+    mixed = ranking_metrics(["low", "high"], {"low": 1, "high": 3})
+    assert mixed["ndcg_at_5"] == pytest.approx((1 + 7 / math.log2(3)) / (7 + 1 / math.log2(3)))
+    late = ranking_metrics([f"wrong-{i}" for i in range(9)] + ["right"], {"right": 3})
+    assert late["recall_at_10"] == 1 and late["ndcg_at_5"] == 0
 
 
 def test_golden_dataset_shape_and_leakage_guards():
@@ -64,7 +68,7 @@ def test_golden_run_is_repeatable_and_cites_only_known_evidence(runtime):
     assert first.summary["constraint_violations"] == 0
     assert first.summary["invalid_evidence_references"] == 0
     assert first.summary["abstention_accuracy"] == 1
-    assert first.summary["unsupported_claim_rate"] is None
+    assert first.summary["unsupported_claim_rate"] == 0
     assert set(first.slices) == {"development", "heldout"}
     comparison = compare_reports(first, second)
     assert comparison["passes_regression_gate"]
@@ -75,6 +79,25 @@ def test_golden_run_is_repeatable_and_cites_only_known_evidence(runtime):
     assert first.dataset_sha256 == baseline["dataset_sha256"]
     assert first.provenance["snapshot"] == baseline["snapshot"]
     assert first.summary["ndcg_at_5"] >= baseline["metrics"]["ndcg_at_5"] - 0.02
+
+
+def test_unsupported_explanations_and_unknown_results_fail_evaluation(runtime):
+    def poisoned(catalog, request):
+        ranking = rank(catalog, request)
+        if ranking.results:
+            ranking.results[0].reasons.append("Guaranteed secure in every environment")
+            ranking.results[0].server = ranking.results[0].server.model_copy(
+                update={"id": "absent"}
+            )
+        return ranking
+
+    baseline = evaluate(runtime.catalog)
+    report = evaluate(runtime.catalog, ranker=poisoned)
+    assert report.summary["unsupported_claim_rate"] > 0
+    assert report.summary["invalid_evidence_references"] > 0
+    assert not compare_reports(baseline, report)["passes_regression_gate"]
+    assert report.provenance["python_version"]
+    assert report.created_at and report.summary["p95_latency_ms"] > 0
 
 
 def test_regression_gate_catches_degraded_ranking(runtime):

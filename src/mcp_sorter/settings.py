@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     mode: Literal["demo", "live"] = "demo"
     data_dir: Path = Path(".data")
     allowed_hosts: tuple[str, ...] = ()
+    trusted_origins: tuple[str, ...] = ()
     request_timeout: float = Field(default=10, gt=0, le=60)
     spending_limit_usd: float = Field(default=0, ge=0)
     openrouter_model: str = ""

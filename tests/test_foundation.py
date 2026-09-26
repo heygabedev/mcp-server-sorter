@@ -52,6 +52,30 @@ def test_health_and_host_validation(tmp_path):
         assert http.get("/health/live", headers={"host": "attacker.test"}).status_code == 400
 
 
+def test_writes_require_same_origin_or_explicit_development_origin(tmp_path):
+    settings = Settings(data_dir=tmp_path, trusted_origins=("http://127.0.0.1:5173",))
+    with TestClient(create_app(settings)) as http:
+        for origin in ("http://testserver", "http://127.0.0.1:5173"):
+            assert (
+                http.post(
+                    "/api/v1/rankings", json={"query": "github"}, headers={"origin": origin}
+                ).status_code
+                == 200
+            )
+        assert (
+            http.post(
+                "/api/v1/rankings", json={}, headers={"origin": "https://attacker.test"}
+            ).status_code
+            == 403
+        )
+        assert (
+            http.post(
+                "/api/v1/rankings", json={}, headers={"sec-fetch-site": "cross-site"}
+            ).status_code
+            == 403
+        )
+
+
 def test_cli_version():
     result = CliRunner().invoke(app, ["version"])
     assert result.exit_code == 0

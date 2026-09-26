@@ -1,0 +1,17 @@
+{
+  "platform": "Windows-11-10.0.26200-SP0",
+  "python": "3.13.7",
+  "installed_versions": [
+    "0.1.0rc1",
+    "0.1.0"
+  ],
+  "rollback": "passed",
+  "packaged_ui": "passed",
+  "offline_install": "passed",
+  "query_redaction": "passed",
+  "snapshot_preserved": "943ade094ce587eafb0cb2ba49a97e52934f23eab30e586593428a2af4592a97",
+  "artifacts": [
+    "71c0d7ba7049b165dee8b7b7f6465e5fec614f0f1c6f6145512af615bca71f8f",
+    "650e6b11f3f9e14137717ce103116de361f37d8f8b743264e419de548255b631"
+  ]
+}

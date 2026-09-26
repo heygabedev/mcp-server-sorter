@@ -1,0 +1,23 @@
+{
+  "engine": "28.4.0",
+  "platform": "linux/amd64",
+  "versions": [
+    "0.1.0rc1",
+    "0.1.0",
+    "0.1.0rc1"
+  ],
+  "image_ids": {
+    "0.1.0rc1": "sha256:a0633eb403f401c2d2823c4893da24e9aef8505086e1f39d3d9548f639c17b25",
+    "0.1.0": "sha256:ff020bef8e6add6098b85b177a2d94ea1c29ad40d99346b5e0353820d486e355"
+  },
+  "rollback": "passed",
+  "collections_preserved": true,
+  "snapshot_preserved": "943ade094ce587eafb0cb2ba49a97e52934f23eab30e586593428a2af4592a97",
+  "backup_compatibility": "passed",
+  "packaged_ui": "passed",
+  "read_only_root": true,
+  "loopback_binding": true,
+  "query_redaction": "passed",
+  "archive_reload": "passed",
+  "compose_pinned_rollback": "passed"
+}

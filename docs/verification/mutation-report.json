@@ -1,0 +1,75 @@
+{
+  "created_at": "2026-09-26T10:28:41.737068+00:00",
+  "source_sha256": "0901ec3341b1dde0c8b90cf3567fcc3157097aa2fbc96541565ffcf282c84fe4",
+  "scope": "13 targeted retrieval, evaluation, and recovery mutations",
+  "exclusions": [],
+  "results": [
+    {
+      "module": "ranking",
+      "fault": "Drop the authentication filter",
+      "status": "killed"
+    },
+    {
+      "module": "ranking",
+      "fault": "Invert the deprecation filter",
+      "status": "killed"
+    },
+    {
+      "module": "ranking",
+      "fault": "Prefer less evidence",
+      "status": "killed"
+    },
+    {
+      "module": "ranking",
+      "fault": "Prefer stale evidence",
+      "status": "killed"
+    },
+    {
+      "module": "evaluation",
+      "fault": "Use linear relevance gains",
+      "status": "killed"
+    },
+    {
+      "module": "evaluation",
+      "fault": "Truncate recall at five",
+      "status": "killed"
+    },
+    {
+      "module": "evaluation",
+      "fault": "Ignore reciprocal position",
+      "status": "killed"
+    },
+    {
+      "module": "evaluation",
+      "fault": "Accept a severe regression",
+      "status": "killed"
+    },
+    {
+      "module": "recovery",
+      "fault": "Skip backup checksums",
+      "status": "killed"
+    },
+    {
+      "module": "recovery",
+      "fault": "Weaken backup path validation",
+      "status": "killed"
+    },
+    {
+      "module": "recovery",
+      "fault": "Restore while the service is running",
+      "status": "killed"
+    },
+    {
+      "module": "releases",
+      "fault": "Ignore the pinned artifact digest",
+      "status": "killed"
+    },
+    {
+      "module": "releases",
+      "fault": "Invert rollback compatibility",
+      "status": "killed"
+    }
+  ],
+  "detection_rate": 1.0,
+  "passes_gate": true
+}

@@ -1,0 +1,55 @@
+{
+  "created_at": "2026-09-26T10:27:45.799184+00:00",
+  "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+  "processor": "x86_64",
+  "logical_cpus": 16,
+  "python": "3.13.1",
+  "sqlite": "3.47.1",
+  "source_sha256": "0901ec3341b1dde0c8b90cf3567fcc3157097aa2fbc96541565ffcf282c84fe4",
+  "snapshot": "feca21ad4529d6a6d2d98f2febdb3080ed262e8b3b546b707299c79ac540c7d3",
+  "servers": 10000,
+  "workload": "Repeated synthetic records; six queries, one-third filtered",
+  "timing": "Real HTTP; latency includes open-loop scheduling delay",
+  "phases": {
+    "load": {
+      "scheduled_rps": 10,
+      "duration_seconds": 30,
+      "requests": 300,
+      "elapsed_seconds": 29.930727294999997,
+      "p50_ms": 31.227091999994627,
+      "p95_ms": 74.91227899998876,
+      "p99_ms": 84.12493499997709,
+      "errors": 0,
+      "error_types": [],
+      "rss_before_bytes": 106459136,
+      "rss_after_bytes": 122052608
+    },
+    "stress": {
+      "scheduled_rps": 50,
+      "duration_seconds": 10,
+      "requests": 500,
+      "elapsed_seconds": 10.033807002999993,
+      "p50_ms": 37.78083999998216,
+      "p95_ms": 97.90024400001585,
+      "p99_ms": 141.4655990000142,
+      "errors": 0,
+      "error_types": [],
+      "rss_before_bytes": 122052608,
+      "rss_after_bytes": 175984640
+    },
+    "soak": {
+      "scheduled_rps": 10,
+      "duration_seconds": 180,
+      "requests": 1800,
+      "elapsed_seconds": 179.92976905900002,
+      "p50_ms": 30.328333999989354,
+      "p95_ms": 70.01337600001989,
+      "p99_ms": 76.41008899997814,
+      "errors": 0,
+      "error_types": [],
+      "rss_before_bytes": 175984640,
+      "rss_after_bytes": 127291392
+    }
+  },
+  "passes_latency_gate": true
+}

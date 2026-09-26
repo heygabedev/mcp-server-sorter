@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from mcp_sorter import __version__
 from mcp_sorter.catalog import Catalog
 from mcp_sorter.models import Filters, ServerRecord
+from mcp_sorter.versioning import Configurations, active_versions
 
 POLICY_VERSION = "bm25-evidence-v1"
 Profile = Literal[
@@ -29,6 +30,7 @@ class RankRequest(BaseModel):
     query: str = Field(default="", max_length=500)
     filters: Filters = Field(default_factory=Filters)
     snapshot: str | None = None
+    configuration: str | None = None
     limit: int = Field(default=20, ge=1, le=50)
     profile: Profile = "baseline"
 
@@ -44,6 +46,9 @@ class Ranking(BaseModel):
     schema_version: int = 1
     application_version: str = __version__
     snapshot: str
+    configuration: str = ""
+    prompt_version: str = "evidence-order-v1"
+    model_profiles_version: str = "profiles-v1"
     as_of: str
     policy_version: str = POLICY_VERSION
     sqlite_version: str = sqlite3.sqlite_version
@@ -61,7 +66,10 @@ def query_expression(query: str) -> str:
 
 
 def rank(catalog: Catalog, request: RankRequest) -> Ranking:
-    snapshot = request.snapshot or catalog.active()
+    active_catalog, active_configuration = active_versions(catalog.engine)
+    snapshot = request.snapshot or active_catalog
+    configuration = request.configuration or active_configuration
+    policy = Configurations(catalog.directory.parent, catalog.engine).load(configuration)
     expression = query_expression(request.query)
     with catalog.connect(snapshot) as db:
         manifest = json.loads(db.execute("SELECT payload FROM manifest").fetchone()[0])
@@ -69,9 +77,9 @@ def rank(catalog: Catalog, request: RankRequest) -> Ranking:
             rows = []
         elif expression:
             rows = db.execute(
-                "SELECT servers.payload, bm25(search,0,5,1,2) FROM search "
+                "SELECT servers.payload, bm25(search,0,?,?,?) FROM search "
                 "JOIN servers ON servers.id=search.id WHERE search MATCH ?",
-                (expression,),
+                (policy.name_weight, policy.description_weight, policy.tags_weight, expression),
             ).fetchall()
         else:
             rows = db.execute("SELECT payload, 0.0 FROM servers ORDER BY id").fetchall()
@@ -97,6 +105,7 @@ def rank(catalog: Catalog, request: RankRequest) -> Ranking:
     ]
     return Ranking(
         snapshot=snapshot,
+        configuration=configuration,
         as_of=manifest["as_of"],
         query=request.query,
         filters=request.filters,

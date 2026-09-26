@@ -1,5 +1,6 @@
 import json
 import logging
+from pathlib import Path
 
 import typer
 import uvicorn
@@ -29,6 +30,78 @@ eval_app = typer.Typer(no_args_is_help=True)
 app.add_typer(eval_app, name="eval")
 jobs_app = typer.Typer(no_args_is_help=True)
 app.add_typer(jobs_app, name="jobs")
+backup_app = typer.Typer(no_args_is_help=True)
+app.add_typer(backup_app, name="backup")
+config_app = typer.Typer(no_args_is_help=True)
+app.add_typer(config_app, name="config")
+
+
+@config_app.command("create")
+def create_configuration(
+    name: str, name_weight: float = 5, description_weight: float = 1, tags_weight: float = 2
+) -> None:
+    """Store an immutable ranking configuration without activating it."""
+    from mcp_sorter.versioning import Configuration
+
+    runtime = Runtime(Settings())
+    try:
+        typer.echo(
+            runtime.configurations.publish(
+                Configuration(
+                    name=name,
+                    name_weight=name_weight,
+                    description_weight=description_weight,
+                    tags_weight=tags_weight,
+                )
+            )
+        )
+    finally:
+        runtime.close()
+
+
+@app.command("activate")
+def activate_versions(snapshot: str, configuration: str) -> None:
+    """Atomically activate a compatible catalog/configuration pair, retaining collections."""
+    from mcp_sorter.versioning import activate
+
+    runtime = Runtime(Settings())
+    try:
+        activate(runtime.catalog, runtime.configurations, snapshot, configuration)
+        typer.echo(json.dumps({"snapshot": snapshot, "configuration": configuration}))
+    finally:
+        runtime.close()
+
+
+@backup_app.command("create")
+def create_backup() -> None:
+    """Capture state and immutable artifacts in a verified local backup."""
+    from mcp_sorter.recovery import backup
+
+    runtime = Runtime(Settings())
+    try:
+        typer.echo(str(backup(runtime)))
+    finally:
+        runtime.close()
+
+
+@backup_app.command("verify")
+def verify_backup(directory: Path) -> None:
+    """Verify checksums, required artifacts, and state schema compatibility."""
+    from mcp_sorter.recovery import validate_backup
+
+    typer.echo(validate_backup(directory).model_dump_json(indent=2))
+
+
+@backup_app.command("restore")
+def restore_backup(directory: Path, destination: Path) -> None:
+    """Restore into a new data directory with the service stopped, preserving newer collections."""
+    from mcp_sorter.recovery import restore
+
+    runtime = Runtime(Settings())
+    try:
+        typer.echo(json.dumps(restore(runtime, directory, destination), indent=2))
+    finally:
+        runtime.close()
 
 
 @jobs_app.command("submit")
@@ -172,6 +245,10 @@ def versions() -> None:
                 {
                     "active_catalog": runtime.catalog.active(),
                     "snapshots": runtime.catalog.snapshots(),
+                    "configurations": {
+                        key: value.model_dump()
+                        for key, value in runtime.configurations.versions().items()
+                    },
                 },
                 indent=2,
             )

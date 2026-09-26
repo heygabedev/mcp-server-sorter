@@ -16,6 +16,7 @@ from mcp_sorter.gateways import rank_with_profile
 from mcp_sorter.runtime import Runtime
 from mcp_sorter.sources import fetch_registry
 from mcp_sorter.storage import canonical
+from mcp_sorter.versioning import active_versions
 
 
 class JobRequest(BaseModel):
@@ -35,7 +36,7 @@ class JobRequest(BaseModel):
 
 def enqueue(runtime: Runtime, request: JobRequest) -> dict[str, Any]:
     payload = request.model_dump(exclude={"idempotency_key"})
-    payload["snapshot"] = runtime.catalog.active()
+    payload["snapshot"], payload["configuration"] = active_versions(runtime.engine)
     with runtime.engine.begin() as db:
         db.exec_driver_sql("BEGIN IMMEDIATE")
         old = (
@@ -203,6 +204,7 @@ def execute(runtime: Runtime, job: dict[str, Any]) -> dict[str, Any]:
                 runtime.catalog,
                 profile=payload["profile"],
                 snapshot=payload["snapshot"],
+                configuration=payload.get("configuration"),
                 ranker=lambda catalog, query: rank_with_profile(
                     runtime, query.model_copy(update={"profile": payload["profile"]})
                 ),

@@ -1,5 +1,6 @@
 import { ArrowDownToLine, ArrowRight, ChevronRight } from 'lucide-react';
-import { download } from '../api';
+import { api, download } from '../api';
+import { useState } from 'react';
 import type { Profile, Report } from '../api';
 import { profiles } from '../profiles';
 import PageTitle from './PageTitle';
@@ -21,6 +22,23 @@ export default function EvaluationsView({
   reports,
   setReport,
 }: Props) {
+  const [baseline, setBaseline] = useState('');
+  const [comparison, setComparison] = useState('');
+  async function compare() {
+    if (!report || !baseline) return;
+    try {
+      const result = await api<{
+        ndcg_delta: number | null;
+        ci95: number[] | null;
+        passes_regression_gate: boolean;
+      }>(`/evaluation-comparison?baseline=${baseline}&candidate=${report.id}`);
+      setComparison(
+        `NDCG@5 change: ${result.ndcg_delta?.toFixed(3) ?? 'n/a'}. Paired regression gate: ${result.passes_regression_gate ? 'passed' : 'failed'}. 95% interval: ${result.ci95?.map((v) => v.toFixed(3)).join(' to ') ?? 'n/a'}.`,
+      );
+    } catch (cause) {
+      setComparison(cause instanceof Error ? cause.message : 'Comparison failed');
+    }
+  }
   return (
     <>
       <PageTitle
@@ -64,6 +82,28 @@ export default function EvaluationsView({
       </p>
       {report && (
         <section className="panel report">
+          <div className="eval-actions">
+            <select
+              aria-label="Baseline evaluation"
+              value={baseline}
+              onChange={(event) => setBaseline(event.target.value)}
+            >
+              <option value="">Choose a baseline report</option>
+              {reports.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.profile} · {item.id.slice(0, 8)}
+                </option>
+              ))}
+            </select>
+            <button className="secondary" disabled={!baseline} onClick={() => void compare()}>
+              Compare baseline
+            </button>
+          </div>
+          {comparison && (
+            <p role="status" className="caption">
+              {comparison}
+            </p>
+          )}
           <div className="section-heading">
             <div>
               <span className="eyebrow">LATEST RESULT · {report.profile}</span>
@@ -90,7 +130,7 @@ export default function EvaluationsView({
               </div>
             ))}
           </div>
-          <div className="table-wrap">
+          <div className="table-wrap" tabIndex={0} role="region" aria-label="Evaluation cases">
             <table>
               <thead>
                 <tr>

@@ -1,0 +1,24 @@
+groups:
+  - name: sorter
+    rules:
+      - alert: SorterUnavailable
+        expr: up{job="mcp-sorter"} == 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: MCP Server Sorter cannot be scraped
+      - alert: SorterJobFailed
+        expr: sorter_jobs{status="failed"} > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: A persisted job exhausted its retry budget
+      - alert: SorterHighLatency
+        expr: histogram_quantile(0.95, sum(rate(sorter_request_seconds_bucket[5m])) by (le)) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: HTTP p95 latency exceeds 500 ms

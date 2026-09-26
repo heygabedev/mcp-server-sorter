@@ -30,6 +30,15 @@ test('search, compare, save, export and evaluate without external requests', asy
   await page.getByRole('button', { name: 'Run evaluation', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Golden dataset report' })).toBeVisible();
   await expect(page.locator('tbody tr')).toHaveCount(90);
+  await page.getByLabel('Baseline evaluation').selectOption({ index: 1 });
+  await page.getByRole('button', { name: 'Compare baseline', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('regression gate: passed');
+  await page.getByRole('button', { name: 'Operations', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Durable jobs' })).toBeVisible();
+  await page.getByRole('button', { name: 'Refresh catalog', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Refresh catalog', exact: true })).toBeEnabled();
+  await expect(page.getByText('catalog-refresh', { exact: true }).first()).toBeVisible();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   expect(external).toEqual([]);
 });
 

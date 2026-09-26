@@ -27,7 +27,11 @@ class RequestTelemetry(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         if request.method not in ("GET", "HEAD", "OPTIONS"):
             origin = request.headers.get("origin")
-            if (origin and origin != str(request.base_url).rstrip("/")) or request.headers.get(
+            allowed_origins = {
+                str(request.base_url).rstrip("/"),
+                *request.app.state.settings.trusted_origins,
+            }
+            if (origin and origin not in allowed_origins) or request.headers.get(
                 "sec-fetch-site"
             ) == "cross-site":
                 return JSONResponse(

@@ -117,6 +117,32 @@ def test_regression_gate_catches_degraded_ranking(runtime):
         compare_reports(baseline, candidate)
 
 
+@pytest.mark.parametrize("behavior", ["never", "always"])
+def test_abstention_gate_uses_cases_instead_of_cached_summary(runtime, behavior):
+    def broken(catalog, request):
+        result = rank(catalog, request)
+        if behavior == "never" and not result.results:
+            result = rank(catalog, request.model_copy(update={"query": "github"}))
+        if behavior == "always":
+            result.results = []
+        return result
+
+    baseline = evaluate(runtime.catalog)
+    candidate = evaluate(runtime.catalog, ranker=broken)
+    assert sum(not c.abstention_correct for c in candidate.cases) == (
+        30 if behavior == "never" else 60
+    )
+    candidate.summary = baseline.summary
+    assert not compare_reports(baseline, candidate)["passes_regression_gate"]
+
+
+def test_comparison_rejects_empty_and_duplicate_reports(runtime):
+    report = evaluate(runtime.catalog)
+    for cases, message in [([], "nonempty"), ([report.cases[0]] * 2, "unique")]:
+        with pytest.raises(ValueError, match=message):
+            compare_reports(report, report.model_copy(update={"cases": cases}))
+
+
 def test_reports_are_immutable_and_html_is_escaped(runtime, tmp_path):
     report = evaluate(runtime.catalog)
     report.profile = "<script>alert(1)</script>"

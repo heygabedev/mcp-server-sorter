@@ -289,12 +289,18 @@ def save_report(directory: Path, report: EvaluationReport) -> None:
 
 
 def compare_reports(baseline: EvaluationReport, candidate: EvaluationReport) -> dict[str, object]:
+    if not baseline.cases or not candidate.cases:
+        raise ValueError("Paired comparisons require nonempty reports")
     if (
         baseline.dataset_sha256 != candidate.dataset_sha256
         or baseline.provenance["snapshot"] != candidate.provenance["snapshot"]
     ):
         raise ValueError("Paired comparisons require identical datasets and snapshots")
     old = {case.id: case for case in baseline.cases}
+    if len(old) != len(baseline.cases) or len({c.id for c in candidate.cases}) != len(
+        candidate.cases
+    ):
+        raise ValueError("Paired comparisons require unique case IDs")
     if old.keys() != {case.id for case in candidate.cases}:
         raise ValueError("Paired comparisons require identical case IDs")
     differences: list[float] = []
@@ -320,12 +326,17 @@ def compare_reports(baseline: EvaluationReport, candidate: EvaluationReport) -> 
         else []
     )
     delta = sum(differences) / len(differences) if differences else None
-    passed = (delta is None or delta >= -0.02) and all(
-        candidate.summary[key] == 0
-        for key in (
-            "constraint_violations",
-            "invalid_evidence_references",
-            "unsupported_claim_rate",
+    summary = summarize(candidate.cases)
+    passed = (
+        (delta is None or delta >= -0.02)
+        and summary["abstention_accuracy"] == 1
+        and all(
+            summary[key] == 0
+            for key in (
+                "constraint_violations",
+                "invalid_evidence_references",
+                "unsupported_claim_rate",
+            )
         )
     )
     return {

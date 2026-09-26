@@ -1,5 +1,6 @@
 import json
 import math
+from concurrent.futures import ThreadPoolExecutor
 from importlib.resources import files
 
 import pytest
@@ -13,6 +14,7 @@ from mcp_sorter.evaluation import (
     evaluate,
     load_golden,
     ranking_metrics,
+    render_saved_report,
     report_path,
     save_report,
     summarize,
@@ -201,6 +203,51 @@ def test_reports_are_immutable_and_html_is_escaped(runtime, tmp_path):
         report_path(tmp_path, "../escape")
     with pytest.raises(ValueError):
         summarize([])
+
+
+def test_html_repairs_are_atomic_and_leave_json_unchanged(runtime, tmp_path, monkeypatch):
+    from pathlib import Path
+
+    report = evaluate(runtime.catalog)
+    save_report(tmp_path, report)
+    path = report_path(tmp_path, report.id)
+    original = path.read_bytes()
+    output = path.with_suffix(".html")
+    expected = output.read_bytes()
+    output.write_text("interrupted")
+    replace = Path.replace
+
+    def fail(self, target):
+        raise OSError("interrupted before publication")
+
+    monkeypatch.setattr(Path, "replace", fail)
+    with pytest.raises(OSError):
+        render_saved_report(tmp_path, report.id)
+    assert output.read_text() == "interrupted"
+    assert not list(path.parent.glob(".*.tmp"))
+    monkeypatch.setattr(Path, "replace", replace)
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        list(pool.map(lambda _: render_saved_report(tmp_path, report.id), range(8)))
+    assert path.read_bytes() == original
+    assert output.read_bytes() == expected
+    path.write_text("corrupt JSON")
+    with pytest.raises(ValueError):
+        render_saved_report(tmp_path, report.id)
+    assert output.read_bytes() == expected
+    path.write_text(report.model_copy(update={"id": "a" * 32}).model_dump_json())
+    with pytest.raises(ValueError, match="filename"):
+        render_saved_report(tmp_path, report.id)
+
+
+def test_interruption_before_json_publication_leaves_no_report(runtime, tmp_path, monkeypatch):
+    def interrupt(*args):
+        raise OSError("interrupted")
+
+    monkeypatch.setattr("mcp_sorter.artifacts.os.link", interrupt)
+    report = evaluate(runtime.catalog)
+    with pytest.raises(OSError):
+        save_report(tmp_path, report)
+    assert list((tmp_path / "reports").iterdir()) == []
 
 
 def test_absent_judgments_and_all_abstention_dataset(runtime):

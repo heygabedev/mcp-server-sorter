@@ -234,7 +234,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         except ValueError as exc:
             raise HTTPException(422, str(exc)) from exc
 
-    @application.get("/api/v1/collections/{identifier}/export", response_model=SelectionExport)
+    @application.get(
+        "/api/v1/collections/{identifier:collection_id}/export", response_model=SelectionExport
+    )
     def export_collection(
         identifier: str, revision: int | None = Query(default=None, ge=1)
     ) -> SelectionExport:

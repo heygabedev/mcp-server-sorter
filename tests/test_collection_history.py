@@ -196,3 +196,8 @@ def test_revision_api_edits_and_history_exports(runtime):
         assert client.post(route + "/restore", json={"expected_revision": 3}).status_code == 200
         assert len(client.get(route + "/history").json()) == 4
         assert client.get("/api/v1/collections/missing").status_code == 404
+        assert client.get("/api/v1/collections/" + "0" * 32).status_code == 404
+        unsupported = client.get("/api/v1/collections/import")
+        assert unsupported.status_code == 405
+        assert unsupported.headers["allow"] == "POST"
+        assert client.post("/api/v1/collections/deleted", json={}).status_code == 405

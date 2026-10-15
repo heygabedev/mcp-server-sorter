@@ -1,6 +1,7 @@
 from collections.abc import Callable
 
 from fastapi import APIRouter, HTTPException
+from starlette.convertors import StringConvertor, register_url_convertor
 
 from mcp_sorter.collection_drift import ApplyPreview, DriftPreview, apply_preview, preview_drift
 from mcp_sorter.runtime import Runtime
@@ -15,6 +16,13 @@ from mcp_sorter.selections import (
     history,
     set_deleted,
 )
+
+
+class CollectionId(StringConvertor):
+    regex = "[a-f0-9]{32}"
+
+
+register_url_convertor("collection_id", CollectionId())
 
 
 def _response[T](action: Callable[[], T]) -> T:
@@ -34,35 +42,35 @@ def router(runtime: Callable[[], Runtime]) -> APIRouter:
     def deleted() -> list[CollectionRevision]:
         return deleted_selections(runtime())
 
-    @routes.get("/{identifier}")
+    @routes.get("/{identifier:collection_id}")
     def detail(identifier: str) -> CollectionRevision:
         return _response(lambda: current_revision(runtime(), identifier))
 
-    @routes.get("/{identifier}/history")
+    @routes.get("/{identifier:collection_id}/history")
     def revisions(identifier: str) -> list[CollectionRevision]:
         return _response(lambda: history(runtime(), identifier))
 
-    @routes.post("/{identifier}/edit")
+    @routes.post("/{identifier:collection_id}/edit")
     def edit(identifier: str, request: CollectionEdit) -> CollectionRevision:
         return _response(lambda: edit_selection(runtime(), identifier, request))
 
-    @routes.post("/{identifier}/delete")
+    @routes.post("/{identifier:collection_id}/delete")
     def delete(identifier: str, request: RevisionRequest) -> CollectionRevision:
         return _response(
             lambda: set_deleted(runtime(), identifier, request.expected_revision, deleted=True)
         )
 
-    @routes.post("/{identifier}/restore")
+    @routes.post("/{identifier:collection_id}/restore")
     def restore(identifier: str, request: RevisionRequest) -> CollectionRevision:
         return _response(
             lambda: set_deleted(runtime(), identifier, request.expected_revision, deleted=False)
         )
 
-    @routes.get("/{identifier}/drift")
+    @routes.get("/{identifier:collection_id}/drift")
     def drift(identifier: str) -> DriftPreview:
         return _response(lambda: preview_drift(runtime(), identifier))
 
-    @routes.post("/{identifier}/update-catalog")
+    @routes.post("/{identifier:collection_id}/update-catalog")
     def update_catalog(identifier: str, request: ApplyPreview) -> CollectionRevision:
         return _response(lambda: apply_preview(runtime(), identifier, request))
 

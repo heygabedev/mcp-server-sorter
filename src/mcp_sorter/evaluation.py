@@ -231,15 +231,17 @@ def evaluate(
     provenance: dict[str, Any] = {}
     for case in dataset.cases:
         started = perf_counter()
-        ranking = ranker(
-            catalog,
-            RankRequest(
-                query=case.query,
-                filters=case.filters,
-                snapshot=snapshot,
-                configuration=configuration,
-            ),
+        request = RankRequest(
+            query=case.query,
+            filters=case.filters,
+            snapshot=snapshot,
+            configuration=configuration,
         )
+        ranking = ranker(catalog, request)
+        expected = {
+            item.server.id: item.retrieval
+            for item in rank(catalog, request.model_copy(update={"limit": 50})).results
+        }
         ids = [item.server.id for item in ranking.results]
         invalid = sum(
             item.server.id not in records
@@ -256,6 +258,9 @@ def evaluate(
                 f"{len(original.evidence)} supporting evidence item(s)" if original else "",
             }
             unsupported += sum(reason not in allowed for reason in item.reasons)
+            unsupported += int(
+                item.retrieval is None or item.retrieval != expected.get(item.server.id)
+            )
         results.append(
             CaseResult(
                 id=case.id,
@@ -268,7 +273,7 @@ def evaluate(
                 ),
                 invalid_evidence_references=invalid,
                 unsupported_claims=unsupported,
-                explanation_claims=sum(len(item.reasons) for item in ranking.results),
+                explanation_claims=sum(len(item.reasons) + 1 for item in ranking.results),
                 abstention_correct=(not ids) == case.expect_abstention,
                 expected_top_correct=(
                     not ids if not case.expected_top else bool(ids) and ids[0] in case.expected_top

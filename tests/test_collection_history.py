@@ -1,5 +1,7 @@
 import sqlite3
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing
+from threading import Barrier
 
 import pytest
 from fastapi.testclient import TestClient
@@ -11,11 +13,17 @@ from mcp_sorter.api import create_app
 from mcp_sorter.recovery import service_lock, state_revision, validate_backup
 from mcp_sorter.runtime import Runtime
 from mcp_sorter.selections import (
+    CollectionConflict,
+    CollectionEdit,
+    current_revision,
+    deleted_selections,
+    edit_selection,
     export_selection,
     history,
     import_selection,
     list_selections,
     save_selection,
+    set_deleted,
 )
 
 
@@ -86,3 +94,105 @@ def test_new_imported_collections_start_at_revision_one_and_sort_newest_first(ru
         export_selection(runtime, first.id, revision=2)
     with pytest.raises(ValueError, match="not found"):
         history(runtime, "missing")
+
+
+def test_edits_deletion_and_restoration_keep_all_revisions(runtime):
+    saved = save_selection(runtime, "First", ["demo/github"])
+    changed = edit_selection(
+        runtime,
+        saved.id,
+        CollectionEdit(expected_revision=1, name="Renamed", ids=["demo/slack", "demo/github"]),
+    )
+    assert changed.revision == 2 and changed.selection.name == "Renamed"
+    assert [s.id for s in changed.selection.servers] == ["demo/slack", "demo/github"]
+    assert export_selection(runtime, saved.id, 1).selection == saved
+    assert export_selection(runtime, saved.id).selection == changed.selection
+    deleted = set_deleted(runtime, saved.id, 2, deleted=True)
+    assert deleted.deleted and deleted.revision == 3 and list_selections(runtime) == []
+    assert deleted_selections(runtime) == [deleted]
+    with pytest.raises(CollectionConflict, match="Restore"):
+        edit_selection(runtime, saved.id, CollectionEdit(expected_revision=3, name="Too soon"))
+    with pytest.raises(CollectionConflict, match="already"):
+        set_deleted(runtime, saved.id, 3, deleted=True)
+    restored = set_deleted(runtime, saved.id, 3, deleted=False)
+    assert restored.revision == 4 and not restored.deleted
+    assert list_selections(runtime) == [changed.selection]
+    assert [r.revision for r in history(runtime, saved.id)] == [4, 3, 2, 1]
+    for revision in (1, 5):
+        with pytest.raises(CollectionConflict):
+            edit_selection(
+                runtime, saved.id, CollectionEdit(expected_revision=revision, name="Stale")
+            )
+        with pytest.raises(CollectionConflict):
+            set_deleted(runtime, saved.id, revision, deleted=True)
+
+
+def test_concurrent_edits_allow_only_one_expected_revision(runtime, monkeypatch):
+    saved = save_selection(runtime, "Original", ["demo/github"])
+    barrier = Barrier(2)
+
+    def read_together(*args):
+        value = current_revision(*args)
+        barrier.wait(timeout=10)
+        return value
+
+    monkeypatch.setattr("mcp_sorter.selections.current_revision", read_together)
+
+    def edit(name):
+        try:
+            return edit_selection(runtime, saved.id, CollectionEdit(expected_revision=1, name=name))
+        except CollectionConflict:
+            return None
+
+    with ThreadPoolExecutor(max_workers=2) as workers:
+        results = list(workers.map(edit, ["First editor", "Second editor"]))
+    assert sum(value is not None for value in results) == 1
+    assert len(history(runtime, saved.id)) == 2
+
+
+def test_edit_validation_and_imported_record_removal_without_source_catalog(runtime):
+    for changes in [{}, {"ids": []}, {"ids": ["demo/github"] * 2}, {"name": ""}]:
+        with pytest.raises(ValueError):
+            CollectionEdit(expected_revision=1, **changes)
+    saved = save_selection(runtime, "Portable", ["demo/github", "demo/slack"])
+    runtime.catalog.path(saved.snapshot).unlink()
+    edited = edit_selection(
+        runtime, saved.id, CollectionEdit(expected_revision=1, ids=["demo/github"])
+    )
+    assert edited.selection.servers == saved.servers[:1]
+    with pytest.raises(ValueError, match="Unknown catalog"):
+        edit_selection(runtime, saved.id, CollectionEdit(expected_revision=2, ids=["demo/gitlab"]))
+
+
+def test_revision_api_edits_and_history_exports(runtime):
+    with TestClient(create_app(runtime.settings)) as client:
+        saved = client.post(
+            "/api/v1/collections", json={"name": "API", "ids": ["demo/github"]}
+        ).json()
+        route = f"/api/v1/collections/{saved['id']}"
+        assert client.get(route).json()["revision"] == 1
+        assert (
+            client.post(
+                route + "/edit", json={"expected_revision": 1, "name": "Updated"}
+            ).status_code
+            == 200
+        )
+        assert (
+            client.post(route + "/edit", json={"expected_revision": 1, "name": "Stale"}).status_code
+            == 409
+        )
+        assert (
+            client.post(
+                route + "/edit", json={"expected_revision": 2, "ids": ["missing"]}
+            ).status_code
+            == 422
+        )
+        assert client.get(route + "/export?revision=1").json()["selection"]["name"] == "API"
+        assert client.get(route + "/export").json()["selection"]["name"] == "Updated"
+        assert client.get(route + "/export?revision=99").status_code == 404
+        assert client.post(route + "/delete", json={"expected_revision": 2}).status_code == 200
+        assert client.get("/api/v1/collections").json() == []
+        assert len(client.get("/api/v1/collections/deleted").json()) == 1
+        assert client.post(route + "/restore", json={"expected_revision": 3}).status_code == 200
+        assert len(client.get(route + "/history").json()) == 4
+        assert client.get("/api/v1/collections/missing").status_code == 404

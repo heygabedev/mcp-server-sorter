@@ -14,6 +14,7 @@ from starlette.routing import Route
 
 from mcp_sorter import __version__
 from mcp_sorter.catalog import CatalogSummary
+from mcp_sorter.collection_routes import router as collection_router
 from mcp_sorter.evaluation import (
     DatasetName,
     EvaluationReport,
@@ -94,6 +95,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         },
     )
     application.state.settings = config
+    application.include_router(collection_router(lambda: application.state.runtime))
     application.include_router(
         operations_router(lambda: application.state.runtime, lambda: application.state.telemetry)
     )
@@ -233,9 +235,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(422, str(exc)) from exc
 
     @application.get("/api/v1/collections/{identifier}/export", response_model=SelectionExport)
-    def export_collection(identifier: str) -> SelectionExport:
+    def export_collection(
+        identifier: str, revision: int | None = Query(default=None, ge=1)
+    ) -> SelectionExport:
         try:
-            return export_selection(application.state.runtime, identifier)
+            return export_selection(application.state.runtime, identifier, revision)
         except ValueError as exc:
             raise HTTPException(404, str(exc)) from exc
 

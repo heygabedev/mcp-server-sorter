@@ -41,6 +41,133 @@ class CollectionRevision(BaseModel):
     selection: Selection
 
 
+class CollectionConflict(ValueError):
+    pass
+
+
+class RevisionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    expected_revision: int = Field(ge=1)
+
+
+class CollectionEdit(RevisionRequest):
+    name: str | None = Field(default=None, min_length=1, max_length=80)
+    ids: list[str] | None = Field(default=None, min_length=1, max_length=50)
+
+    @model_validator(mode="after")
+    def valid_edit(self) -> Self:
+        if self.name is None and self.ids is None:
+            raise ValueError("Supply a name or server IDs to edit")
+        if self.ids is not None and len(set(self.ids)) != len(self.ids):
+            raise ValueError("A selection cannot contain duplicate server IDs")
+        return self
+
+
+def current_revision(runtime: Runtime, identifier: str) -> CollectionRevision:
+    with runtime.engine.connect() as db:
+        row = db.execute(
+            text(
+                "SELECT r.revision,r.deleted,r.changed_at,r.payload FROM collection_revisions r "
+                "JOIN collections c ON c.id=r.collection_id AND c.current_revision=r.revision "
+                "WHERE c.id=:id"
+            ),
+            {"id": identifier},
+        ).first()
+    if row is None:
+        raise ValueError("Collection not found")
+    return CollectionRevision(
+        revision=row[0],
+        deleted=row[1],
+        changed_at=row[2],
+        selection=Selection.model_validate_json(row[3]),
+    )
+
+
+def deleted_selections(runtime: Runtime) -> list[CollectionRevision]:
+    with runtime.engine.connect() as db:
+        rows = db.execute(
+            text(
+                "SELECT r.revision,r.deleted,r.changed_at,r.payload FROM collection_revisions r "
+                "JOIN collections c ON c.id=r.collection_id AND c.current_revision=r.revision "
+                "WHERE c.deleted=1 ORDER BY julianday(r.changed_at) DESC,c.id DESC"
+            )
+        ).all()
+    return [
+        CollectionRevision(
+            revision=r[0],
+            deleted=r[1],
+            changed_at=r[2],
+            selection=Selection.model_validate_json(r[3]),
+        )
+        for r in rows
+    ]
+
+
+def _write_revision(
+    runtime: Runtime, selection: Selection, expected: int, *, deleted: bool = False
+) -> CollectionRevision:
+    changed_at = datetime.now(UTC)
+    values = {
+        "id": selection.id,
+        "payload": selection.model_dump_json(),
+        "expected": expected,
+        "revision": expected + 1,
+        "deleted": deleted,
+        "at": changed_at.isoformat(),
+    }
+    with runtime.engine.begin() as db:
+        result = db.execute(
+            text(
+                "UPDATE collections SET payload=:payload,"
+                "current_revision=:revision,deleted=:deleted "
+                "WHERE id=:id AND current_revision=:expected"
+            ),
+            values,
+        )
+        if result.rowcount != 1:
+            raise CollectionConflict("Collection changed; reload before editing")
+        db.execute(
+            text("INSERT INTO collection_revisions VALUES (:id,:revision,:payload,:deleted,:at)"),
+            values,
+        )
+    return CollectionRevision(
+        revision=expected + 1, deleted=deleted, changed_at=changed_at, selection=selection
+    )
+
+
+def edit_selection(
+    runtime: Runtime, identifier: str, request: CollectionEdit
+) -> CollectionRevision:
+    current = current_revision(runtime, identifier)
+    if current.revision != request.expected_revision:
+        raise CollectionConflict("Collection changed; reload before editing")
+    if current.deleted:
+        raise CollectionConflict("Restore this collection before editing")
+    selection = current.selection
+    if request.ids is not None:
+        existing = {s.id: s for s in selection.servers}
+        missing = [identifier for identifier in request.ids if identifier not in existing]
+        if missing:
+            existing.update(
+                {s.id: s for s in runtime.catalog.records_by_ids(missing, selection.snapshot)}
+            )
+        selection = selection.model_copy(update={"servers": [existing[key] for key in request.ids]})
+    if request.name is not None:
+        selection = selection.model_copy(update={"name": request.name})
+    return _write_revision(runtime, selection, request.expected_revision)
+
+
+def set_deleted(
+    runtime: Runtime, identifier: str, expected: int, *, deleted: bool
+) -> CollectionRevision:
+    current = current_revision(runtime, identifier)
+    if current.revision != expected:
+        raise CollectionConflict("Collection changed; reload before editing")
+    if current.deleted == deleted:
+        raise CollectionConflict("Collection already has the requested deletion state")
+    return _write_revision(runtime, current.selection, expected, deleted=deleted)
+
+
 def save_selection(
     runtime: Runtime, name: str, ids: list[str], snapshot: str | None = None
 ) -> Selection:

@@ -5,6 +5,7 @@ export type Ranking = components['schemas']['Ranking'];
 export type CatalogPage = components['schemas']['CatalogPage'];
 export type CatalogSearch = components['schemas']['CatalogSearch'];
 export type Selection = components['schemas']['Selection'];
+export type CollectionRevision = components['schemas']['CollectionRevision'];
 export type Report = components['schemas']['EvaluationReport'];
 export type WorkspaceInfo = components['schemas']['WorkspaceInfo'];
 export type Profile = NonNullable<components['schemas']['RankRequest']['profile']>;

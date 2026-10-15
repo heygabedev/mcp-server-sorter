@@ -17,6 +17,12 @@ ROOT = Path(__file__).resolve().parents[1]
 # They are a targeted campaign, not an exhaustive mutation score for the repository.
 MUTATIONS = [
     (
+        "selections",
+        "WHERE id=:id AND current_revision=:expected",
+        "WHERE id=:id",
+        "Allow a stale collection revision to overwrite a concurrent edit",
+    ),
+    (
         "ranking",
         "(score,-evidence_count,-freshness_used,server_id) > (?,?,?,?)",
         "(score,-evidence_count,-freshness_used,server_id) >= (?,?,?,?)",
@@ -102,6 +108,7 @@ def run_tests(directory, modules):
                 for module in sorted(modules)
             ],
             *(["tests/test_search.py"] if "ranking" in modules else []),
+            *(["tests/test_collection_history.py"] if "selections" in modules else []),
         ],
         cwd=directory,
         env={**os.environ, "PYTHONPATH": str(directory / "src"), "PYTHONDONTWRITEBYTECODE": "1"},

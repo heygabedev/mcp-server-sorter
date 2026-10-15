@@ -87,6 +87,18 @@ def test_legacy_retry_requires_recorded_pins(runtime):
         retry_job(runtime, failed["id"], RetryRequest(idempotency_key="legacy"))
 
 
+@pytest.mark.parametrize("payload", ["private-provider-content", "[]", '{"kind":"unknown"}'])
+def test_corrupted_retry_inputs_fail_with_a_bounded_message(runtime, payload):
+    failed = failed_job(runtime)
+    with runtime.engine.begin() as db:
+        db.execute(
+            text("UPDATE jobs SET payload=:payload WHERE id=:id"),
+            {"payload": payload, "id": failed["id"]},
+        )
+    with pytest.raises(ValueError, match="^Job inputs are invalid; submit a new job$"):
+        retry_job(runtime, failed["id"], RetryRequest(idempotency_key="invalid"))
+
+
 def test_retry_api_and_cli_share_idempotency(runtime, monkeypatch):
     failed = failed_job(runtime)
     monkeypatch.setenv("SORTER_DATA_DIR", str(runtime.settings.data_dir))

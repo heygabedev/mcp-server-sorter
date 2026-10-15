@@ -40,7 +40,15 @@ def retry_job(runtime: Runtime, identifier: str, request: RetryRequest) -> dict[
             if existing["parent_job_id"] != identifier:
                 raise ValueError("Idempotency key already belongs to a different request")
             return with_attempts(db, [dict(existing)])[0]
-        payload = json.loads(original["payload"])
+        try:
+            payload = json.loads(original["payload"])
+        except ValueError as exc:
+            raise ValueError("Job inputs are invalid; submit a new job") from exc
+        if not isinstance(payload, dict) or payload.get("kind") not in {
+            "evaluation",
+            "catalog-refresh",
+        }:
+            raise ValueError("Job inputs are invalid; submit a new job")
         required = {"snapshot", "configuration", "profile"}
         if payload["kind"] == "evaluation":
             required |= {"dataset_sha256", "dataset_version", "dataset"}

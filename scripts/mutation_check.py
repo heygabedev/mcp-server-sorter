@@ -17,6 +17,12 @@ ROOT = Path(__file__).resolve().parents[1]
 # They are a targeted campaign, not an exhaustive mutation score for the repository.
 MUTATIONS = [
     (
+        "jobs",
+        "WHERE id=:id AND owner=:owner AND status='running' AND lease_until>:now",
+        "WHERE id=:id AND status='running' AND lease_until>:now",
+        "Allow an expired worker to finish a reclaimed job",
+    ),
+    (
         "recovery",
         "current_revision=excluded.current_revision,deleted=excluded.deleted",
         "current_revision=excluded.current_revision,deleted=0",

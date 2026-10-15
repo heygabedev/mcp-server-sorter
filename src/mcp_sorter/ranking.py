@@ -3,7 +3,7 @@ import sqlite3
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
 from mcp_sorter import __version__
 from mcp_sorter.catalog import Catalog
@@ -11,6 +11,8 @@ from mcp_sorter.models import Filters, ServerRecord
 from mcp_sorter.versioning import Configurations, active_versions
 
 POLICY_VERSION = "bm25-evidence-v1"
+MatchField = Literal["name", "description", "tags"]
+SEARCH_FIELDS: tuple[MatchField, ...] = ("name", "description", "tags")
 Profile = Literal[
     "baseline",
     "demo-balanced",
@@ -34,11 +36,23 @@ class RankRequest(BaseModel):
     profile: Profile = "baseline"
 
 
+class RetrievalExplanation(BaseModel):
+    version: Literal["retrieval-evidence-v1"] = "retrieval-evidence-v1"
+    matched_fields: list[MatchField]
+    applied_filters: Filters
+    bm25_score: float = Field(allow_inf_nan=False)
+    evidence_ids: list[str]
+    evidence_count: int = Field(ge=0)
+    freshness_at: AwareDatetime
+    stable_id: str
+
+
 class RankedServer(BaseModel):
     server: ServerRecord
     relevance: float
     reasons: list[str]
     evidence_ids: list[str]
+    retrieval: RetrievalExplanation | None = None
 
 
 class Ranking(BaseModel):
@@ -92,9 +106,14 @@ def rank(catalog: Catalog, request: RankRequest) -> Ranking:
         if not request.filters.include_deprecated:
             conditions.append("json_extract(servers.payload,'$.status') != 'deprecated'")
         score = "0.0"
+        matches = "0,0,0"
         source = "servers"
         if expression:
             score = "bm25(search,0,?,?,?)"
+            matches = ",".join(
+                f"highlight(search,{index},'<','>') != search.{field}"
+                for index, field in enumerate(SEARCH_FIELDS, 1)
+            )
             parameters = [
                 policy.name_weight,
                 policy.description_weight,
@@ -109,7 +128,7 @@ def rank(catalog: Catalog, request: RankRequest) -> Ranking:
             rows = []
         else:
             rows = db.execute(
-                f"SELECT servers.payload, {score} AS score FROM {source} WHERE {where} "
+                f"SELECT servers.payload, {score} AS score, {matches} FROM {source} WHERE {where} "
                 "ORDER BY score, "
                 "json_array_length(json_extract(servers.payload,'$.evidence')) DESC, "
                 "freshness(json_extract(servers.payload,'$.updated_at')) DESC, servers.id LIMIT ?",
@@ -124,8 +143,19 @@ def rank(catalog: Catalog, request: RankRequest) -> Ranking:
                 f"{len(server.evidence)} supporting evidence item(s)",
             ],
             evidence_ids=[item.id for item in server.evidence],
+            retrieval=RetrievalExplanation(
+                matched_fields=[
+                    field for field, matched in zip(SEARCH_FIELDS, flags, strict=True) if matched
+                ],
+                applied_filters=request.filters,
+                bm25_score=float(score),
+                evidence_ids=[item.id for item in server.evidence],
+                evidence_count=len(server.evidence),
+                freshness_at=min(server.updated_at, datetime.fromisoformat(as_of)),
+                stable_id=server.id,
+            ),
         )
-        for payload, score in rows
+        for payload, score, *flags in rows
         for server in [ServerRecord.model_validate_json(payload)]
     ]
     return Ranking(

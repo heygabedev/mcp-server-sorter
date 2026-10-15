@@ -172,3 +172,38 @@ def test_filters_apply_before_result_limit(runtime):
         ),
     )
     assert [r.server.id for r in result.results] == ["filtered/060"]
+
+
+def test_explanations_use_fts_matches_and_pinned_facts(runtime):
+    from datetime import datetime
+
+    from mcp_sorter.models import Filters
+    from mcp_sorter.ranking import RankRequest, rank
+
+    request = RankRequest(query="github", filters=Filters(auth="oauth"))
+    result = rank(runtime.catalog, request)
+    item = result.results[0]
+    proof = item.retrieval
+    assert proof.matched_fields == ["name", "description"]
+    assert proof.applied_filters == request.filters
+    assert proof.bm25_score == -item.relevance
+    assert proof.evidence_ids == item.evidence_ids
+    assert proof.evidence_count == len(item.server.evidence)
+    assert proof.stable_id == item.server.id
+    assert proof.freshness_at <= datetime.fromisoformat(result.as_of)
+    assert rank(runtime.catalog, RankRequest()).results[0].retrieval.matched_fields == []
+    tags = rank(runtime.catalog, RankRequest(query="repositories")).results[0].retrieval
+    assert tags.matched_fields == ["description", "tags"]
+
+
+def test_explanations_do_not_treat_untrusted_markup_as_matches(runtime):
+    from mcp_sorter.ranking import RankRequest, rank
+
+    original = runtime.catalog.records()[0]
+    record = original.model_copy(
+        update={"name": "<script>unmatched</script>", "description": "needle", "tags": ("other",)}
+    )
+    snapshot = runtime.catalog.publish([record], "2026-01-01T00:00:00Z")
+    result = rank(runtime.catalog, RankRequest(query="needle", snapshot=snapshot))
+    assert result.results[0].retrieval.matched_fields == ["description"]
+    assert result.results[0].retrieval.freshness_at.isoformat() == "2026-01-01T00:00:00+00:00"

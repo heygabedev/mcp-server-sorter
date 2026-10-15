@@ -3,6 +3,7 @@ import VersionsView from './views/VersionsView';
 import CollectionsView from './views/CollectionsView';
 import EvaluationsView from './views/EvaluationsView';
 import OperationsView from './views/OperationsView';
+import RankingEvidence from './views/RankingEvidence';
 import { useWorkspace } from './useWorkspace';
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
@@ -70,6 +71,9 @@ export default function App() {
   const dialog = useRef<HTMLDialogElement>(null);
   const requestNumber = useRef(0);
   const catalog = workspace?.catalog;
+  const detailEvidence = detail
+    ? ranking?.results.find((item) => item.server.id === detail.id)?.retrieval
+    : null;
   const catalogLabel = !workspace
     ? unavailable
       ? 'CATALOG UNAVAILABLE'
@@ -495,6 +499,9 @@ export default function App() {
                           {server.evidence.length !== 1 ? 's' : ''}
                         </span>
                       </div>
+                      {item.retrieval && (
+                        <RankingEvidence explanation={item.retrieval} mode={ranking.mode} />
+                      )}
                     </article>
                   );
                 })}
@@ -610,6 +617,12 @@ export default function App() {
               <dd>{detail.status}</dd>
             </dl>
             <h3>Supporting evidence</h3>
+            {detailEvidence && (
+              <RankingEvidence
+                explanation={detailEvidence}
+                mode={ranking?.mode ?? 'deterministic'}
+              />
+            )}
             {detail.evidence.map((item) => (
               <div className="evidence" key={item.id}>
                 <code>{item.id}</code>

@@ -1150,3 +1150,17 @@ td {
     scroll-behavior: auto !important;
   }
 }
+.ranking-evidence {
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.ranking-evidence summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.ranking-evidence code {
+  display: inline-block;
+}

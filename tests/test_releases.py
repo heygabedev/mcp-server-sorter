@@ -30,7 +30,7 @@ def wheel(tmp_path, version="0.1.0", revisions=None, interface=True):
                     "format_version": 1,
                     "application_version": version,
                     "python": "3.13",
-                    "readable_state_revisions": revisions or ["0005"],
+                    "readable_state_revisions": revisions or ["0006"],
                 }
             ),
         )

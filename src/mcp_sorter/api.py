@@ -70,7 +70,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         with service_lock(config.data_dir):
-            app.state.runtime = Runtime(config)
+            app.state.runtime = Runtime(config, service_locked=True)
             app.state.telemetry = Telemetry()
             worker = Worker(app.state.runtime)
             if config.worker_enabled:

@@ -21,8 +21,8 @@ from mcp_sorter.selections import Selection
 from mcp_sorter.settings import Settings
 from mcp_sorter.versioning import active_versions
 
-CURRENT_REVISION = "0005"
-READABLE_REVISIONS = {"0001", "0002", "0003", "0004", CURRENT_REVISION}
+CURRENT_REVISION = "0006"
+READABLE_REVISIONS = {"0001", "0002", "0003", "0004", "0005", CURRENT_REVISION}
 SAFE_FILE = re.compile(
     r"state\.sqlite|catalogs/[a-f0-9]{64}\.sqlite|"
     r"configurations/[a-f0-9]{64}\.json|reports/[a-f0-9]{32}\.json|datasets/[a-f0-9]{64}\.json"
@@ -62,7 +62,12 @@ def state_revision(path: Path) -> str:
 
 def backup(runtime: Runtime) -> Path:
     active_versions(runtime.engine)
-    root = runtime.settings.data_dir.resolve()
+    return backup_directory(runtime.settings.data_dir)
+
+
+def backup_directory(directory: Path) -> Path:
+    """Capture existing state without opening Runtime or applying migrations."""
+    root = directory.resolve()
     backups = root / "backups"
     backups.mkdir(parents=True, exist_ok=True)
     identifier = uuid4().hex
@@ -141,7 +146,7 @@ def validate_backup(directory: Path) -> BackupManifest:
                 and f"{folder}/{identifier}.{extension}" not in manifest.files
             ):
                 raise ValueError("Backup is missing an active artifact")
-        if manifest.state_revision in {"0004", "0005"}:
+        if manifest.state_revision in {"0004", "0005", "0006"}:
             for (raw,) in db.execute("SELECT payload FROM jobs"):
                 dataset = json.loads(raw).get("dataset_sha256")
                 if dataset:
@@ -154,6 +159,24 @@ def validate_backup(directory: Path) -> BackupManifest:
                 report_id = json.loads(raw).get("report_id")
                 if report_id and f"reports/{report_id}.json" not in manifest.files:
                     raise ValueError("Backup is missing a completed evaluation report")
+        if manifest.state_revision == "0006":
+            for identifier, payload, revision, deleted in db.execute(
+                "SELECT id,payload,current_revision,deleted FROM collections"
+            ):
+                rows = db.execute(
+                    "SELECT revision,payload,deleted FROM collection_revisions "
+                    "WHERE collection_id=? ORDER BY revision",
+                    (identifier,),
+                ).fetchall()
+                if (
+                    revision < 1
+                    or [row[0] for row in rows] != list(range(1, revision + 1))
+                    or rows[-1][1:] != (payload, deleted)
+                ):
+                    raise ValueError("Collection history does not match its current revision")
+                for _, raw, _ in rows:
+                    if Selection.model_validate_json(raw).id != identifier:
+                        raise ValueError("Collection history has an inconsistent identity")
     return manifest
 
 
@@ -180,18 +203,62 @@ def restore(runtime: Runtime, source: Path, destination: Path) -> dict[str, str]
                 with closing(
                     sqlite3.connect((before / "state.sqlite").as_uri() + "?mode=ro", uri=True)
                 ) as db:
-                    selections = [
-                        Selection.model_validate_json(row[0])
-                        for row in db.execute("SELECT payload FROM collections")
-                    ]
+                    selections = db.execute(
+                        "SELECT id,payload,current_revision,deleted FROM collections"
+                    ).fetchall()
+                    revisions = db.execute("SELECT * FROM collection_revisions").fetchall()
                 with restored.engine.begin() as db:
-                    for selection in selections:
+                    for identifier, payload, revision, deleted in selections:
+                        existing = db.execute(
+                            text("SELECT current_revision FROM collections WHERE id=:id"),
+                            {"id": identifier},
+                        ).scalar_one_or_none()
+                        if existing is not None and existing > revision:
+                            raise ValueError(
+                                "Backup has newer collection history; "
+                                "restore into a separate workspace"
+                            )
                         db.execute(
                             text(
-                                "INSERT INTO collections(id,payload) VALUES (:id,:payload) "
-                                "ON CONFLICT(id) DO UPDATE SET payload=excluded.payload"
+                                "INSERT INTO collections(id,payload,current_revision,deleted) "
+                                "VALUES (:id,:payload,:revision,:deleted) "
+                                "ON CONFLICT(id) DO UPDATE SET payload=excluded.payload, "
+                                "current_revision=excluded.current_revision,deleted=excluded.deleted"
                             ),
-                            {"id": selection.id, "payload": selection.model_dump_json()},
+                            {
+                                "id": identifier,
+                                "payload": payload,
+                                "revision": revision,
+                                "deleted": deleted,
+                            },
+                        )
+                    for identifier, revision, payload, deleted, changed_at in revisions:
+                        values = {
+                            "id": identifier,
+                            "revision": revision,
+                            "payload": payload,
+                            "deleted": deleted,
+                            "at": changed_at,
+                        }
+                        previous = db.execute(
+                            text(
+                                "SELECT payload,deleted,changed_at FROM collection_revisions "
+                                "WHERE collection_id=:id AND revision=:revision"
+                            ),
+                            values,
+                        ).first()
+                        if previous is not None and tuple(previous) != (
+                            payload,
+                            deleted,
+                            changed_at,
+                        ):
+                            raise ValueError("Collection histories have diverged")
+                        db.execute(
+                            text(
+                                "INSERT OR IGNORE INTO collection_revisions VALUES "
+                                "(:id,:revision,:payload,:deleted,:at)"
+                            ),
+                            values,
                         )
                     db.execute(
                         text(

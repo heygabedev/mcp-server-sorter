@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from typing import Literal, Self
 from uuid import uuid4
 
-from pydantic import AwareDatetime, ConfigDict, Field, model_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
 from sqlalchemy import text
 
 from mcp_sorter.models import ServerRecord, VersionedModel
@@ -34,6 +34,13 @@ class SelectionExport(VersionedModel):
     selection: Selection
 
 
+class CollectionRevision(BaseModel):
+    revision: int = Field(ge=1)
+    deleted: bool
+    changed_at: AwareDatetime
+    selection: Selection
+
+
 def save_selection(
     runtime: Runtime, name: str, ids: list[str], snapshot: str | None = None
 ) -> Selection:
@@ -53,8 +60,16 @@ def save_selection(
 def _insert(runtime: Runtime, selection: Selection) -> None:
     with runtime.engine.begin() as db:
         db.execute(
-            text("INSERT INTO collections VALUES (:id,:payload)"),
+            text("INSERT INTO collections(id,payload) VALUES (:id,:payload)"),
             {"id": selection.id, "payload": selection.model_dump_json()},
+        )
+        db.execute(
+            text("INSERT INTO collection_revisions VALUES (:id,1,:payload,0,:at)"),
+            {
+                "id": selection.id,
+                "payload": selection.model_dump_json(),
+                "at": selection.created_at.isoformat(),
+            },
         )
 
 
@@ -62,7 +77,12 @@ def list_selections(runtime: Runtime) -> list[Selection]:
     with runtime.engine.connect() as db:
         return [
             Selection.model_validate_json(row[0])
-            for row in db.execute(text("SELECT payload FROM collections ORDER BY id"))
+            for row in db.execute(
+                text(
+                    "SELECT payload FROM collections WHERE deleted=0 "
+                    "ORDER BY julianday(json_extract(payload,'$.created_at')) DESC,id DESC"
+                )
+            )
         ]
 
 
@@ -76,8 +96,40 @@ def get_selection(runtime: Runtime, identifier: str) -> Selection:
     return Selection.model_validate_json(payload)
 
 
-def export_selection(runtime: Runtime, identifier: str) -> SelectionExport:
-    selection = get_selection(runtime, identifier)
+def history(runtime: Runtime, identifier: str) -> list[CollectionRevision]:
+    with runtime.engine.connect() as db:
+        rows = db.execute(
+            text(
+                "SELECT revision,deleted,changed_at,payload FROM collection_revisions "
+                "WHERE collection_id=:id ORDER BY revision DESC"
+            ),
+            {"id": identifier},
+        ).all()
+    if not rows:
+        raise ValueError("Collection not found")
+    return [
+        CollectionRevision(
+            revision=r[0],
+            deleted=r[1],
+            changed_at=r[2],
+            selection=Selection.model_validate_json(r[3]),
+        )
+        for r in rows
+    ]
+
+
+def export_selection(
+    runtime: Runtime, identifier: str, revision: int | None = None
+) -> SelectionExport:
+    if revision is None:
+        selection = get_selection(runtime, identifier)
+    else:
+        item = next(
+            (item for item in history(runtime, identifier) if item.revision == revision), None
+        )
+        if item is None:
+            raise ValueError("Collection revision not found")
+        selection = item.selection
     digest = hashlib.sha256(canonical(selection.model_dump(mode="json")).encode()).hexdigest()
     return SelectionExport(content_sha256=digest, selection=selection)
 
@@ -88,7 +140,9 @@ def import_selection(runtime: Runtime, bundle: SelectionExport) -> Selection:
     ).hexdigest()
     if digest != bundle.content_sha256:
         raise ValueError("Selection checksum mismatch")
-    selection = bundle.selection.model_copy(update={"id": uuid4().hex})
+    selection = bundle.selection.model_copy(
+        update={"id": uuid4().hex, "created_at": datetime.now(UTC)}
+    )
     _insert(runtime, selection)
     return selection
 

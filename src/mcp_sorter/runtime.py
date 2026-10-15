@@ -5,9 +5,9 @@ from mcp_sorter.versioning import Configurations
 
 
 class Runtime:
-    def __init__(self, settings: Settings) -> None:
+    def __init__(self, settings: Settings, *, service_locked: bool = False) -> None:
         self.settings = settings
-        self.engine = open_state(settings.data_dir)
+        self.engine = open_state(settings.data_dir, service_locked=service_locked)
         self.catalog = Catalog(settings.data_dir, self.engine)
         self.configurations = Configurations(settings.data_dir, self.engine)
         self.configurations.seed()

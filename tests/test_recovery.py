@@ -72,7 +72,7 @@ def test_backup_restore_preserves_newer_collections_and_pinned_results(runtime, 
     enqueue(runtime, JobRequest(kind="evaluation", idempotency_key="evaluation"))
     assert run_once(runtime)
     path = backup(runtime)
-    assert state_revision(path / "state.sqlite") == "0005"
+    assert state_revision(path / "state.sqlite") == "0006"
     manifest = validate_backup(path)
     assert manifest.files and "state.sqlite" in manifest.files
     save_selection(runtime, "Added later", ["demo/slack"])
@@ -110,6 +110,9 @@ def test_restore_upgrades_previous_state_revision_and_recovers_running_jobs(runt
     path = backup(runtime)
     # Reconstruct the preceding migration's actual table shape in the backup fixture.
     with closing(sqlite3.connect(path / "state.sqlite")) as db, db:
+        db.execute("DROP TABLE collection_revisions")
+        db.execute("ALTER TABLE collections DROP COLUMN current_revision")
+        db.execute("ALTER TABLE collections DROP COLUMN deleted")
         db.execute("ALTER TABLE activations DROP COLUMN configuration")
         db.execute("UPDATE alembic_version SET version_num='0004'")
     manifest = json.loads((path / "manifest.json").read_text())
@@ -118,7 +121,7 @@ def test_restore_upgrades_previous_state_revision_and_recovers_running_jobs(runt
     (path / "manifest.json").write_text(json.dumps(manifest))
     target = tmp_path.parent / (tmp_path.name + "-upgraded")
     restore(runtime, path, target)
-    assert state_revision(target / "state.sqlite") == "0005"
+    assert state_revision(target / "state.sqlite") == "0006"
     with closing(sqlite3.connect(target / "state.sqlite")) as db:
         assert db.execute("SELECT status,owner FROM jobs").fetchone() == ("queued", None)
 

@@ -3354,6 +3354,16 @@
             },
             "type": "array",
             "title": "Evidence Ids"
+          },
+          "retrieval": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RetrievalExplanation"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -3444,6 +3454,63 @@
         "type": "object",
         "required": ["snapshot", "as_of", "query", "filters", "results"],
         "title": "Ranking"
+      },
+      "RetrievalExplanation": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "const": "retrieval-evidence-v1",
+            "title": "Version",
+            "default": "retrieval-evidence-v1"
+          },
+          "matched_fields": {
+            "items": {
+              "type": "string",
+              "enum": ["name", "description", "tags"]
+            },
+            "type": "array",
+            "title": "Matched Fields"
+          },
+          "applied_filters": {
+            "$ref": "#/components/schemas/Filters"
+          },
+          "bm25_score": {
+            "type": "number",
+            "title": "Bm25 Score"
+          },
+          "evidence_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Evidence Ids"
+          },
+          "evidence_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Evidence Count"
+          },
+          "freshness_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Freshness At"
+          },
+          "stable_id": {
+            "type": "string",
+            "title": "Stable Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "matched_fields",
+          "applied_filters",
+          "bm25_score",
+          "evidence_ids",
+          "evidence_count",
+          "freshness_at",
+          "stable_id"
+        ],
+        "title": "RetrievalExplanation"
       },
       "Selection": {
         "properties": {

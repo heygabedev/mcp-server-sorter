@@ -172,6 +172,44 @@ def test_unsupported_explanations_and_unknown_results_fail_evaluation(runtime):
     assert report.created_at and report.summary["p95_latency_ms"] > 0
 
 
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("matched_fields", ["tags"]),
+        ("evidence_count", 999),
+        ("evidence_ids", ["invented"]),
+        ("stable_id", "demo/invented"),
+        ("bm25_score", 123),
+    ],
+)
+def test_structured_explanation_claims_must_match_pinned_facts(runtime, field, value):
+    def misleading(catalog, request):
+        result = rank(catalog, request)
+        if result.results:
+            proof = result.results[0].retrieval
+            result.results[0].retrieval = proof.model_copy(update={field: value})
+        return result
+
+    report = evaluate(runtime.catalog, ranker=misleading)
+    assert report.summary["unsupported_claim_rate"] > 0
+    assert not compare_reports(evaluate(runtime.catalog), report)["passes_regression_gate"]
+
+
+def test_omitting_explanations_fails_without_breaking_old_report_reads(runtime):
+    def omit(catalog, request):
+        result = rank(catalog, request)
+        for item in result.results:
+            item.retrieval = None
+        return result
+
+    report = evaluate(runtime.catalog, ranker=omit)
+    assert report.summary["unsupported_claim_rate"] > 0
+    from mcp_sorter.evaluation import EvaluationReport
+
+    old = report.model_dump(exclude={"dataset_kind"})
+    assert EvaluationReport.model_validate(old).dataset_kind == "synthetic-regression"
+
+
 def test_regression_gate_catches_degraded_ranking(runtime):
     baseline = evaluate(runtime.catalog)
     candidate = baseline.model_copy(deep=True)

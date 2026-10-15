@@ -39,6 +39,12 @@ MUTATIONS = [
         "Ignore reciprocal position",
     ),
     ("evaluation", "delta >= -0.02", "delta >= -1.02", "Accept a severe regression"),
+    (
+        "evaluation",
+        "item.retrieval is None or item.retrieval != expected.get(item.server.id)",
+        "False",
+        "Accept unsupported retrieval explanations",
+    ),
     ("evaluation", 'after["abstention_accuracy"] != 1', "False", "Ignore incorrect abstentions"),
     (
         "evaluation",

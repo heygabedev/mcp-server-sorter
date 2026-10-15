@@ -44,6 +44,10 @@ test('search, compare, save, export and evaluate without external requests', asy
   await page.getByLabel('Search servers').fill('github');
   await page.getByRole('button', { name: 'Find servers' }).click();
   await expect(page.locator('.server-card')).toHaveCount(1);
+  await page.locator('.server-card summary').click();
+  await expect(page.getByText('Search terms matched the name, description.')).toBeVisible();
+  await expect(page.getByText(/not a confidence estimate/)).toBeVisible();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.getByLabel('Select GitHub').check();
   await page.getByRole('button', { name: 'Save selection' }).click();
   await page.getByLabel('Collection name').fill('Browser test toolkit');

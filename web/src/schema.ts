@@ -715,6 +715,7 @@ export interface components {
       reasons: string[];
       /** Evidence Ids */
       evidence_ids: string[];
+      retrieval?: components['schemas']['RetrievalExplanation'] | null;
     };
     /** Ranking */
     Ranking: {
@@ -773,6 +774,31 @@ export interface components {
       model_metadata?: {
         [key: string]: unknown;
       };
+    };
+    /** RetrievalExplanation */
+    RetrievalExplanation: {
+      /**
+       * Version
+       * @default retrieval-evidence-v1
+       * @constant
+       */
+      version: 'retrieval-evidence-v1';
+      /** Matched Fields */
+      matched_fields: ('name' | 'description' | 'tags')[];
+      applied_filters: components['schemas']['Filters'];
+      /** Bm25 Score */
+      bm25_score: number;
+      /** Evidence Ids */
+      evidence_ids: string[];
+      /** Evidence Count */
+      evidence_count: number;
+      /**
+       * Freshness At
+       * Format: date-time
+       */
+      freshness_at: string;
+      /** Stable Id */
+      stable_id: string;
     };
     /** Selection */
     Selection: {

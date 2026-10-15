@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { api, download, waitForJob } from './api';
 import type { Job } from './api';
-import type { Profile, Ranking, Report, Selection, Server } from './api';
+import type { Profile, Ranking, Report, Selection, Server, WorkspaceInfo } from './api';
 
 type Tab = 'Discover' | 'Collections' | 'Evaluations' | 'Versions' | 'Operations';
 const categories = [
@@ -63,6 +63,10 @@ export default function App() {
   const [collections, setCollections] = useState<Selection[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
   const [report, setReport] = useState<Report | null>(null);
+  const [evaluationDataset, setEvaluationDataset] = useState<'regression' | 'challenge'>(
+    'regression',
+  );
+  const [datasets, setDatasets] = useState<Record<string, WorkspaceInfo['evaluation_dataset']>>({});
   const dialog = useRef<HTMLDialogElement>(null);
   const requestNumber = useRef(0);
   const catalog = workspace?.catalog;
@@ -127,7 +131,14 @@ export default function App() {
     try {
       if (next === 'Discover') await search();
       if (next === 'Collections') setCollections(await api<Selection[]>('/collections'));
-      if (next === 'Evaluations') setReports(await api<Report[]>('/evaluations'));
+      if (next === 'Evaluations') {
+        const [history, available] = await Promise.all([
+          api<Report[]>('/evaluations'),
+          api<Record<string, WorkspaceInfo['evaluation_dataset']>>('/evaluation-datasets'),
+        ]);
+        setReports(history);
+        setDatasets(available);
+      }
     } catch (cause) {
       setError(message(cause));
     }
@@ -169,6 +180,7 @@ export default function App() {
       const job = await waitForJob(
         await api<Job>('/jobs', {
           kind: 'evaluation',
+          dataset: evaluationDataset,
           profile,
           idempotency_key: crypto.randomUUID(),
         }),
@@ -527,7 +539,17 @@ export default function App() {
           )}
           {tab === 'Evaluations' && (
             <EvaluationsView
-              dataset={workspace?.evaluation_dataset ?? null}
+              dataset={
+                datasets[evaluationDataset] ??
+                (evaluationDataset === 'regression'
+                  ? (workspace?.evaluation_dataset ?? null)
+                  : null)
+              }
+              datasetName={evaluationDataset}
+              setDatasetName={(name) => {
+                setEvaluationDataset(name);
+                setReport(null);
+              }}
               profile={profile}
               setProfile={setProfile}
               busy={busy}

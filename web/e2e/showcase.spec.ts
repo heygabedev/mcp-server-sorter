@@ -1,6 +1,24 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
+test('runs challenge cases with integrity checks separate from ranking quality', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Evaluations', exact: true }).click();
+  await page.getByLabel('Evaluation dataset').selectOption('challenge');
+  await expect(page.getByText('20 / 40', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Run evaluation' }).click();
+  await expect(page.getByRole('heading', { name: 'Mock challenge report' })).toBeVisible();
+  await expect(
+    page.getByRole('cell', { name: 'unsupported-calendar-write.1', exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText(/Challenge quality scores are diagnostic/)).toBeVisible();
+  await page.getByLabel('Baseline evaluation').selectOption({ index: 1 });
+  await page.getByRole('button', { name: 'Compare baseline' }).click();
+  await expect(page.getByText(/Integrity checks: passed/)).toBeVisible();
+});
+
 test('search, compare, save, export and evaluate without external requests', async ({ page }) => {
   const external: string[] = [];
   await page.route('**/*', (route) => {

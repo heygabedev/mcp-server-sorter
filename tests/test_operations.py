@@ -252,7 +252,7 @@ def test_refresh_and_bounded_retries_keep_previous_catalog(runtime, monkeypatch)
             db.execute(text("UPDATE jobs SET available_at=0 WHERE id=:id"), {"id": failed["id"]})
         assert run_once(runtime)
     row = get_job(runtime.engine, failed["id"])
-    assert row["status"] == "failed" and row["error_code"] == "execution-failed"
+    assert row["status"] == "failed" and row["error_code"] == "invalid-data"
     assert "secret" not in json.dumps(status(runtime))
 
 

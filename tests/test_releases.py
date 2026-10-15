@@ -33,7 +33,7 @@ def wheel(tmp_path, version="0.1.0", revisions=None, interface=True):
                     "format_version": 1,
                     "application_version": version,
                     "python": "3.13",
-                    "readable_state_revisions": revisions or ["0006"],
+                    "readable_state_revisions": revisions or ["0007"],
                 }
             ),
         )
@@ -160,6 +160,10 @@ def test_release_selection_does_not_migrate_and_rollback_rejects_collection_hist
     settings = runtime.settings
     runtime.close()
     with closing(sqlite3.connect(settings.data_dir / "state.sqlite")) as db, db:
+        db.execute("DROP TABLE job_attempts")
+        db.execute("ALTER TABLE jobs DROP COLUMN parent_job_id")
+        db.execute("ALTER TABLE jobs DROP COLUMN request_trace_id")
+        db.execute("ALTER TABLE jobs DROP COLUMN request_span_id")
         db.execute("DROP TABLE collection_revisions")
         db.execute("ALTER TABLE collections DROP COLUMN current_revision")
         db.execute("ALTER TABLE collections DROP COLUMN deleted")
@@ -172,7 +176,7 @@ def test_release_selection_does_not_migrate_and_rollback_rejects_collection_hist
     assert (
         validate_backup(settings.data_dir / "backups" / old_pointer.backup).state_revision == "0005"
     )
-    candidate = wheel(tmp_path, "0.2.0", revisions=["0005", "0006"])
+    candidate = wheel(tmp_path, "0.2.0", revisions=["0005", "0006", "0007"])
     fake_installer(monkeypatch, settings, candidate)
     stage(settings, candidate, digest(candidate), tmp_path)
     new_pointer = activate_release(settings, digest(candidate))
@@ -181,4 +185,4 @@ def test_release_selection_does_not_migrate_and_rollback_rejects_collection_hist
     with pytest.raises(ValueError, match="schema"):
         rollback_release(settings)
     assert pointer(settings) == new_pointer
-    assert state_revision(settings.data_dir / "state.sqlite") == "0006"
+    assert state_revision(settings.data_dir / "state.sqlite") == "0007"

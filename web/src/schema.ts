@@ -932,6 +932,37 @@ export interface components {
        */
       include_deprecated: boolean;
     };
+    /** JobAttempt */
+    JobAttempt: {
+      /** Attempt */
+      attempt: number;
+      /** Started At */
+      started_at: number;
+      /** Finished At */
+      finished_at: number | null;
+      /**
+       * Outcome
+       * @enum {string}
+       */
+      outcome: 'running' | 'completed' | 'failed' | 'lease-expired' | 'interrupted';
+      /** Error Code */
+      error_code:
+        | (
+            | 'execution-failed'
+            | 'timeout'
+            | 'rate-limited'
+            | 'provider-unavailable'
+            | 'invalid-data'
+            | 'state-store-unavailable'
+            | 'lease-expired'
+            | 'worker-interrupted'
+            | 'retry-budget-exhausted'
+            | 'artifact-unavailable'
+          )
+        | null;
+      /** Trace Id */
+      trace_id?: string | null;
+    };
     /** JobRequest */
     JobRequest: {
       /**
@@ -960,6 +991,55 @@ export interface components {
         | 'demo-malformed'
         | 'demo-rate-limited'
         | 'demo-unavailable';
+    };
+    /** JobView */
+    JobView: {
+      /** Id */
+      id: string;
+      /** Idempotency Key */
+      idempotency_key: string;
+      /** Payload */
+      payload: string;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: 'queued' | 'running' | 'completed' | 'failed';
+      /** Attempts */
+      attempts: number;
+      /** Owner */
+      owner: string | null;
+      /** Lease Until */
+      lease_until: number | null;
+      /** Available At */
+      available_at: number;
+      /** Created At */
+      created_at: number;
+      /** Result */
+      result: string | null;
+      /** Error Code */
+      error_code:
+        | (
+            | 'execution-failed'
+            | 'timeout'
+            | 'rate-limited'
+            | 'provider-unavailable'
+            | 'invalid-data'
+            | 'state-store-unavailable'
+            | 'lease-expired'
+            | 'worker-interrupted'
+            | 'retry-budget-exhausted'
+            | 'artifact-unavailable'
+          )
+        | null;
+      /** Parent Job Id */
+      parent_job_id: string | null;
+      /** Request Trace Id */
+      request_trace_id: string | null;
+      /** Request Span Id */
+      request_span_id: string | null;
+      /** Attempt History */
+      attempt_history: components['schemas']['JobAttempt'][];
     };
     /** RankRequest */
     RankRequest: {
@@ -1993,9 +2073,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': {
-            [key: string]: unknown;
-          };
+          'application/json': components['schemas']['JobView'];
         };
       };
       /** @description Bad Request */
@@ -2089,9 +2167,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': {
-            [key: string]: unknown;
-          };
+          'application/json': components['schemas']['JobView'];
         };
       };
       /** @description Bad Request */

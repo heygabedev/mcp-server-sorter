@@ -7,7 +7,7 @@ from typing import Any, Literal
 from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import Engine, text
+from sqlalchemy import Connection, Engine, bindparam, text
 from sqlalchemy.exc import SQLAlchemyError
 
 from mcp_sorter.evaluation import (
@@ -22,10 +22,13 @@ from mcp_sorter.evaluation import (
 )
 from mcp_sorter.events import record_event
 from mcp_sorter.gateways import rank_with_profile
+from mcp_sorter.job_diagnostics import FAILURE_CODES, FailureCode, failure_code
 from mcp_sorter.runtime import Runtime
 from mcp_sorter.sources import fetch_registry
 from mcp_sorter.storage import canonical
 from mcp_sorter.versioning import active_versions
+
+HEARTBEAT_SECONDS = 5
 
 
 class JobRequest(BaseModel):
@@ -66,7 +69,7 @@ def enqueue(runtime: Runtime, request: JobRequest) -> dict[str, Any]:
                 or original.get("dataset", "regression") != request.dataset
             ):
                 raise ValueError("Idempotency key already belongs to a different request")
-            return dict(old)
+            return with_attempts(db, [dict(old)])[0]
         identifier = uuid4().hex
         now = time()
         db.execute(
@@ -86,6 +89,7 @@ def enqueue(runtime: Runtime, request: JobRequest) -> dict[str, Any]:
 
 def get_job(engine: Engine, identifier: str) -> dict[str, Any]:
     with engine.connect() as db:
+        db.exec_driver_sql("BEGIN")
         row = (
             db.execute(text("SELECT * FROM jobs WHERE id=:id"), {"id": identifier})
             .mappings()
@@ -93,17 +97,37 @@ def get_job(engine: Engine, identifier: str) -> dict[str, Any]:
         )
         if row is None:
             raise ValueError("Job not found")
-        return dict(row)
+        return with_attempts(db, [dict(row)])[0]
+
+
+def with_attempts(db: Connection, jobs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    indexed = {job["id"]: {**job, "attempt_history": []} for job in jobs}
+    if indexed:
+        for attempt in db.execute(
+            text(
+                "SELECT job_id,attempt,started_at,finished_at,outcome,error_code,trace_id "
+                "FROM job_attempts WHERE job_id IN :ids ORDER BY attempt"
+            ).bindparams(bindparam("ids", expanding=True)),
+            {"ids": list(indexed)},
+        ).mappings():
+            indexed[attempt["job_id"]]["attempt_history"].append(
+                {k: v for k, v in attempt.items() if k != "job_id"}
+            )
+    return list(indexed.values())
 
 
 def list_jobs(engine: Engine) -> list[dict[str, Any]]:
     with engine.connect() as db:
-        return [
-            dict(r)
-            for r in db.execute(
-                text("SELECT * FROM jobs ORDER BY created_at DESC LIMIT 100")
-            ).mappings()
-        ]
+        db.exec_driver_sql("BEGIN")
+        return with_attempts(
+            db,
+            [
+                dict(r)
+                for r in db.execute(
+                    text("SELECT * FROM jobs ORDER BY created_at DESC LIMIT 100")
+                ).mappings()
+            ],
+        )
 
 
 def claim(engine: Engine, now: float | None = None) -> dict[str, Any] | None:
@@ -112,10 +136,27 @@ def claim(engine: Engine, now: float | None = None) -> dict[str, Any] | None:
         db.exec_driver_sql("BEGIN IMMEDIATE")
         db.execute(
             text(
-                "UPDATE jobs SET status=CASE WHEN attempts>=3 THEN 'failed' ELSE 'queued' END,"
-                "owner=NULL,error_code='lease-expired' WHERE status='running' AND lease_until<=:now"
+                "UPDATE job_attempts SET outcome='lease-expired',"
+                "error_code='lease-expired',finished_at=:now WHERE outcome='running' "
+                "AND EXISTS (SELECT 1 FROM jobs WHERE jobs.id=job_attempts.job_id "
+                "AND jobs.owner=job_attempts.owner AND jobs.status='running' "
+                "AND jobs.lease_until<=:now)"
             ),
             {"now": now},
+        )
+        db.execute(
+            text(
+                "UPDATE jobs SET status=CASE WHEN attempts>=3 THEN 'failed' ELSE 'queued' END,"
+                "owner=NULL,lease_until=NULL,error_code='lease-expired' "
+                "WHERE status='running' AND lease_until<=:now"
+            ),
+            {"now": now},
+        )
+        db.execute(
+            text(
+                "UPDATE jobs SET status='failed',error_code='retry-budget-exhausted' "
+                "WHERE status='queued' AND attempts>=3"
+            )
         )
         row = (
             db.execute(
@@ -137,6 +178,13 @@ def claim(engine: Engine, now: float | None = None) -> dict[str, Any] | None:
                 "lease_until=:lease WHERE id=:id"
             ),
             {"owner": owner, "lease": now + 30, "id": row["id"]},
+        )
+        db.execute(
+            text(
+                "INSERT INTO job_attempts(job_id,attempt,owner,started_at,outcome) "
+                "VALUES (:id,:attempt,:owner,:now,'running')"
+            ),
+            {"id": row["id"], "attempt": row["attempts"] + 1, "owner": owner, "now": now},
         )
         return {
             **row,
@@ -167,6 +215,7 @@ def finish(
     result: dict[str, Any],
     failed: bool = False,
     now: float | None = None,
+    error_code: FailureCode = "execution-failed",
 ) -> bool:
     now = time() if now is None else now
     snapshot = result.get("snapshot") if not failed else None
@@ -183,14 +232,33 @@ def finish(
             ),
             {
                 "status": status,
-                "result": canonical(result),
-                "error": "execution-failed" if failed else None,
+                "result": None if failed else canonical(result),
+                "error": (error_code if error_code in FAILURE_CODES else "execution-failed")
+                if failed
+                else None,
                 "available": now + 2 ** job["attempts"],
                 "id": job["id"],
                 "owner": job["owner"],
                 "now": now,
             },
         ).rowcount
+        if changed:
+            db.execute(
+                text(
+                    "UPDATE job_attempts SET finished_at=:now,outcome=:outcome,error_code=:error "
+                    "WHERE job_id=:id AND owner=:owner AND attempt=:attempt"
+                ),
+                {
+                    "id": job["id"],
+                    "owner": job["owner"],
+                    "attempt": job["attempts"],
+                    "now": now,
+                    "outcome": "failed" if failed else "completed",
+                    "error": (error_code if error_code in FAILURE_CODES else "execution-failed")
+                    if failed
+                    else None,
+                },
+            )
         if changed and snapshot:
             expected = json.loads(job["payload"])["snapshot"]
             # A concurrent operator activation wins over an old refresh.
@@ -260,8 +328,15 @@ def run_once(runtime: Runtime) -> bool:
     stopped = Event()
 
     def heartbeat() -> None:
-        while not stopped.wait(5):
-            if not renew(runtime.engine, job):
+        while not stopped.wait(HEARTBEAT_SECONDS):
+            try:
+                renewed = renew(runtime.engine, job)
+            except SQLAlchemyError:
+                logging.getLogger("mcp_sorter.worker").warning(
+                    '{"event":"state-store-unavailable"}'
+                )
+                return
+            if not renewed:
                 return
 
     thread = Thread(target=heartbeat, daemon=True)
@@ -269,9 +344,9 @@ def run_once(runtime: Runtime) -> bool:
     try:
         try:
             result = execute(runtime, job)
-        except Exception:
+        except Exception as exc:
             # Persist bounded codes, never exception text from untrusted providers.
-            finish(runtime, job, {}, failed=True)
+            finish(runtime, job, {}, failed=True, error_code=failure_code(exc))
         else:
             finish(runtime, job, result)
     finally:

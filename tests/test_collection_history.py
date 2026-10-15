@@ -30,6 +30,10 @@ from mcp_sorter.selections import (
 def legacy_state(runtime):
     runtime.close()
     with closing(sqlite3.connect(runtime.settings.data_dir / "state.sqlite")) as db, db:
+        db.execute("DROP TABLE job_attempts")
+        db.execute("ALTER TABLE jobs DROP COLUMN parent_job_id")
+        db.execute("ALTER TABLE jobs DROP COLUMN request_trace_id")
+        db.execute("ALTER TABLE jobs DROP COLUMN request_span_id")
         db.execute("DROP TABLE collection_revisions")
         db.execute("ALTER TABLE collections DROP COLUMN current_revision")
         db.execute("ALTER TABLE collections DROP COLUMN deleted")
@@ -47,7 +51,7 @@ def test_migration_keeps_existing_ids_and_records_with_a_verified_backup(runtime
         backups = list((runtime.settings.data_dir / "backups").iterdir())
         assert len(backups) == 1
         assert validate_backup(backups[0]).state_revision == "0005"
-        assert state_revision(runtime.settings.data_dir / "state.sqlite") == "0006"
+        assert state_revision(runtime.settings.data_dir / "state.sqlite") == "0007"
         with pytest.raises(IntegrityError, match="immutable"), upgraded.engine.begin() as db:
             db.execute(text("UPDATE collection_revisions SET deleted=1"))
         with pytest.raises(IntegrityError, match="immutable"), upgraded.engine.begin() as db:

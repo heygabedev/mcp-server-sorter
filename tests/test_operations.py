@@ -198,6 +198,34 @@ def test_racing_evaluation_writer_repairs_the_winning_report(runtime, monkeypatc
     assert execute(runtime, job) == {"report_id": job["id"]}
 
 
+def test_challenge_job_pins_dataset_across_restart_and_restore(runtime, tmp_path, monkeypatch):
+    from mcp_sorter.recovery import backup, restore, validate_backup
+    from mcp_sorter.runtime import Runtime
+
+    queued = enqueue(
+        runtime, JobRequest(kind="evaluation", idempotency_key="challenge", dataset="challenge")
+    )
+    payload = json.loads(queued["payload"])
+    assert payload["dataset_version"] == "golden-challenge-v1"
+    with pytest.raises(ValueError, match="different"):
+        enqueue(runtime, request("challenge"))
+    stored = backup(runtime)
+    assert f"datasets/{payload['dataset_sha256']}.json" in validate_backup(stored).files
+    destination = tmp_path.parent / (tmp_path.name + "-restored")
+    restore(runtime, stored, destination)
+    recovered = Runtime(Settings(data_dir=destination, worker_enabled=False))
+    try:
+        monkeypatch.setattr(
+            "mcp_sorter.jobs.load_golden", lambda: pytest.fail("Must use pinned copy")
+        )
+        assert run_once(recovered)
+        report = json.loads((destination / "reports" / f"{queued['id']}.json").read_text())
+        assert len(report["cases"]) == 60
+        assert report["dataset_sha256"] == payload["dataset_sha256"]
+    finally:
+        recovered.close()
+
+
 def test_refresh_preserves_concurrent_operator_activation(runtime):
     enqueue(runtime, request(kind="catalog-refresh"))
     job = claim(runtime.engine)

@@ -69,6 +69,8 @@ def load_golden(name: DatasetName = "regression") -> GoldenDataset:
 
 
 def validate_golden(dataset: GoldenDataset) -> None:
+    if not dataset.cases:
+        raise ValueError("A dataset must contain at least one case")
     if len({case.id for case in dataset.cases}) != len(dataset.cases):
         raise ValueError("Duplicate evaluation case IDs")
     development = {c.intent_id for c in dataset.cases if c.split == "development"}
@@ -82,6 +84,32 @@ def validate_golden(dataset: GoldenDataset) -> None:
             raise ValueError("Abstention label conflicts with relevance judgments")
         if not set(case.expected_top) <= case.relevance.keys():
             raise ValueError("Expected top result is missing a relevance judgment")
+
+
+def pin_dataset(directory: Path, name: DatasetName) -> dict[str, str]:
+    dataset = load_golden(name)
+    payload = canonical(dataset.model_dump())
+    digest = hashlib.sha256(payload.encode()).hexdigest()
+    path = directory / "datasets" / f"{digest}.json"
+    try:
+        write_once(path, payload)
+    except FileExistsError:
+        if path.read_text("utf-8") != payload:
+            raise ValueError("Pinned dataset has changed") from None
+    return {"dataset": name, "dataset_sha256": digest, "dataset_version": dataset.version}
+
+
+def load_pinned_dataset(directory: Path, digest: str, version: str) -> GoldenDataset:
+    if not re.fullmatch(r"[a-f0-9]{64}", digest):
+        raise ValueError("Invalid dataset digest")
+    payload = (directory / "datasets" / f"{digest}.json").read_text("utf-8")
+    if hashlib.sha256(payload.encode()).hexdigest() != digest:
+        raise ValueError("Pinned dataset has changed")
+    dataset = GoldenDataset.model_validate_json(payload)
+    validate_golden(dataset)
+    if dataset.version != version:
+        raise ValueError("Pinned dataset version does not match")
+    return dataset
 
 
 def ranking_metrics(ids: list[str], relevance: dict[str, int]) -> dict[str, float | None]:
@@ -291,7 +319,9 @@ def render_saved_report(directory: Path, identifier: str) -> None:
     report = EvaluationReport.model_validate_json(path.read_text("utf-8"))
     if report.id != identifier:
         raise ValueError("Evaluation report ID does not match its filename")
-    gate = gate_slice(report.cases, report.cases)
+    gate = gate_slice(
+        report.cases, report.cases, quality_gate=report.dataset_kind == "synthetic-regression"
+    )
     rows = "".join(
         f"<tr><td>{html.escape(c.id)}</td><td>{html.escape(', '.join(c.result_ids))}</td>"
         f"<td>{c.metrics['ndcg_at_5']}</td><td>{c.constraint_violations}</td>"

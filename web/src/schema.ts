@@ -187,6 +187,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/evaluation-datasets': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Evaluation Datasets */
+    get: operations['evaluation_datasets_api_v1_evaluation_datasets_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/evaluations/{identifier}': {
     parameters: {
       query?: never;
@@ -585,6 +602,12 @@ export interface components {
         | 'demo-unavailable'
         | 'openrouter'
         | 'litellm';
+      /**
+       * Dataset
+       * @default regression
+       * @enum {string}
+       */
+      dataset: 'regression' | 'challenge';
     };
     /** Evidence */
     Evidence: {
@@ -628,6 +651,12 @@ export interface components {
        * @enum {string}
        */
       kind: 'evaluation' | 'catalog-refresh';
+      /**
+       * Dataset
+       * @default regression
+       * @enum {string}
+       */
+      dataset: 'regression' | 'challenge';
       /** Idempotency Key */
       idempotency_key: string;
       /**
@@ -1916,6 +1945,100 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['EvaluationReport'];
+        };
+      };
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Method Not Allowed */
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Content Too Large */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  evaluation_datasets_api_v1_evaluation_datasets_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: components['schemas']['DatasetSummary'];
+          };
         };
       };
       /** @description Bad Request */

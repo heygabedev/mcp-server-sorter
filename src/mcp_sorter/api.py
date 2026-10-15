@@ -14,7 +14,14 @@ from starlette.routing import Route
 
 from mcp_sorter import __version__
 from mcp_sorter.catalog import CatalogSummary
-from mcp_sorter.evaluation import EvaluationReport, evaluate, load_golden, report_path, save_report
+from mcp_sorter.evaluation import (
+    DatasetName,
+    EvaluationReport,
+    evaluate,
+    load_golden,
+    report_path,
+    save_report,
+)
 from mcp_sorter.gateways import rank_with_profile
 from mcp_sorter.http_limits import BodyLimit
 from mcp_sorter.jobs import Worker
@@ -162,6 +169,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         runtime: Runtime = application.state.runtime
         report = evaluate(
             runtime.catalog,
+            dataset=load_golden(request.dataset),
             profile=request.profile,
             ranker=lambda catalog, query: rank_with_profile(
                 runtime, query.model_copy(update={"profile": request.profile})
@@ -169,6 +177,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
         save_report(config.data_dir, report)
         return report
+
+    @application.get("/api/v1/evaluation-datasets", response_model=dict[str, DatasetSummary])
+    def evaluation_datasets() -> dict[str, DatasetSummary]:
+        datasets = {"regression": load_golden(), "challenge": load_golden("challenge")}
+        return {
+            name: DatasetSummary(
+                version=data.version,
+                total=len(data.cases),
+                development=sum(c.split == "development" for c in data.cases),
+                heldout=sum(c.split == "heldout" for c in data.cases),
+            )
+            for name, data in datasets.items()
+        }
 
     @application.get("/api/v1/evaluations", response_model=list[EvaluationReport])
     def evaluation_history() -> list[EvaluationReport]:
@@ -288,6 +309,7 @@ class CompareRequest(BaseModel):
 
 class EvaluationRequest(BaseModel):
     profile: Profile = "baseline"
+    dataset: DatasetName = "regression"
 
 
 class CollectionRequest(BaseModel):

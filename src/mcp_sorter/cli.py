@@ -9,9 +9,11 @@ import uvicorn
 from mcp_sorter import __version__
 from mcp_sorter.api import create_app
 from mcp_sorter.evaluation import (
+    DatasetName,
     EvaluationReport,
     compare_reports,
     evaluate,
+    load_golden,
     report_path,
     save_report,
 )
@@ -140,14 +142,16 @@ def restore_backup(directory: Path, destination: Path) -> None:
 
 
 @jobs_app.command("submit")
-def submit_job(kind: str, key: str, profile: str = "baseline") -> None:
+def submit_job(
+    kind: str, key: str, profile: str = "baseline", dataset: DatasetName = "regression"
+) -> None:
     """Queue an offline evaluation or catalog refresh with an idempotency key."""
     from mcp_sorter.jobs import JobRequest, enqueue
 
     runtime = Runtime(Settings())
     try:
         request = JobRequest.model_validate(
-            {"kind": kind, "idempotency_key": key, "profile": profile}
+            {"kind": kind, "idempotency_key": key, "profile": profile, "dataset": dataset}
         )
         typer.echo(json.dumps(enqueue(runtime, request), indent=2))
     finally:
@@ -304,12 +308,13 @@ def diff_catalogs(before: str, after: str) -> None:
 
 
 @eval_app.command("run")
-def run_evaluation(profile: Profile = "baseline") -> None:
+def run_evaluation(profile: Profile = "baseline", dataset: DatasetName = "regression") -> None:
     """Run the mock golden dataset and save immutable JSON and HTML reports."""
     runtime = Runtime(Settings())
     try:
         report = evaluate(
             runtime.catalog,
+            dataset=load_golden(dataset),
             profile=profile,
             ranker=lambda catalog, query: rank_with_profile(
                 runtime, query.model_copy(update={"profile": profile})

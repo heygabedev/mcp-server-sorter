@@ -25,7 +25,7 @@ CURRENT_REVISION = "0005"
 READABLE_REVISIONS = {"0001", "0002", "0003", "0004", CURRENT_REVISION}
 SAFE_FILE = re.compile(
     r"state\.sqlite|catalogs/[a-f0-9]{64}\.sqlite|"
-    r"configurations/[a-f0-9]{64}\.json|reports/[a-f0-9]{32}\.json"
+    r"configurations/[a-f0-9]{64}\.json|reports/[a-f0-9]{32}\.json|datasets/[a-f0-9]{64}\.json"
 )
 
 
@@ -81,6 +81,7 @@ def backup(runtime: Runtime) -> Path:
             ("catalogs", "*.sqlite"),
             ("configurations", "*.json"),
             ("reports", "*.json"),
+            ("datasets", "*.json"),
         ):
             (staging / folder).mkdir()
             for path in sorted((root / folder).glob(pattern)):
@@ -141,6 +142,12 @@ def validate_backup(directory: Path) -> BackupManifest:
             ):
                 raise ValueError("Backup is missing an active artifact")
         if manifest.state_revision in {"0004", "0005"}:
+            for (raw,) in db.execute("SELECT payload FROM jobs"):
+                dataset = json.loads(raw).get("dataset_sha256")
+                if dataset:
+                    name = f"datasets/{dataset}.json"
+                    if name not in manifest.files or manifest.files[name] != dataset:
+                        raise ValueError("Backup is missing a valid pinned evaluation dataset")
             for (raw,) in db.execute(
                 "SELECT result FROM jobs WHERE status='completed' AND result IS NOT NULL"
             ):

@@ -10,7 +10,16 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import Engine, text
 from sqlalchemy.exc import SQLAlchemyError
 
-from mcp_sorter.evaluation import evaluate, render_saved_report, report_path, save_report
+from mcp_sorter.evaluation import (
+    DatasetName,
+    evaluate,
+    load_golden,
+    load_pinned_dataset,
+    pin_dataset,
+    render_saved_report,
+    report_path,
+    save_report,
+)
 from mcp_sorter.events import record_event
 from mcp_sorter.gateways import rank_with_profile
 from mcp_sorter.runtime import Runtime
@@ -22,6 +31,7 @@ from mcp_sorter.versioning import active_versions
 class JobRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     kind: Literal["evaluation", "catalog-refresh"]
+    dataset: DatasetName = "regression"
     idempotency_key: str = Field(min_length=1, max_length=100, pattern=r"^[a-zA-Z0-9_-]+$")
     profile: Literal[
         "baseline",
@@ -37,6 +47,8 @@ class JobRequest(BaseModel):
 def enqueue(runtime: Runtime, request: JobRequest) -> dict[str, Any]:
     payload = request.model_dump(exclude={"idempotency_key"})
     payload["snapshot"], payload["configuration"] = active_versions(runtime.engine)
+    if request.kind == "evaluation":
+        payload.update(pin_dataset(runtime.settings.data_dir, request.dataset))
     with runtime.engine.begin() as db:
         db.exec_driver_sql("BEGIN IMMEDIATE")
         old = (
@@ -49,7 +61,10 @@ def enqueue(runtime: Runtime, request: JobRequest) -> dict[str, Any]:
         )
         if old:
             original = json.loads(old["payload"])
-            if any(original[k] != payload[k] for k in ("kind", "profile")):
+            if (
+                any(original[k] != payload[k] for k in ("kind", "profile"))
+                or original.get("dataset", "regression") != request.dataset
+            ):
                 raise ValueError("Idempotency key already belongs to a different request")
             return dict(old)
         identifier = uuid4().hex
@@ -200,8 +215,16 @@ def execute(runtime: Runtime, job: dict[str, Any]) -> dict[str, Any]:
         if path.exists():
             render_saved_report(runtime.settings.data_dir, job["id"])
         else:
+            dataset = (
+                load_pinned_dataset(
+                    runtime.settings.data_dir, payload["dataset_sha256"], payload["dataset_version"]
+                )
+                if "dataset_sha256" in payload
+                else load_golden()
+            )
             report = evaluate(
                 runtime.catalog,
+                dataset=dataset,
                 profile=payload["profile"],
                 snapshot=payload["snapshot"],
                 configuration=payload.get("configuration"),

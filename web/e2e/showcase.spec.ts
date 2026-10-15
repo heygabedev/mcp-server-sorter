@@ -32,6 +32,11 @@ test('edits, exports, deletes and restores a collection with its history', async
     page.getByRole('button', { name: `Manage ${name} edited`, exact: true }),
   ).toBeVisible();
   await expect(page.getByRole('button', { name: /^Export revision/ })).toHaveCount(4);
+  await page.getByRole('button', { name: 'Preview catalog update', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Pinned server changes' })).toBeVisible();
+  await page.getByRole('button', { name: 'Update catalog pins', exact: true }).click();
+  await expect(page.getByText('Saved revision 5.', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Export revision/ })).toHaveCount(5);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });
 

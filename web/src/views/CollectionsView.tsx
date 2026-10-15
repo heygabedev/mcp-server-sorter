@@ -1,6 +1,6 @@
 import { ArrowDownToLine, ArrowRight, Folder } from 'lucide-react';
 import { useState } from 'react';
-import type { CollectionRevision, Selection } from '../api';
+import type { CollectionRevision, DriftPreview, Selection } from '../api';
 import { api } from '../api';
 import PageTitle from './PageTitle';
 interface Props {
@@ -26,9 +26,17 @@ export default function CollectionsView({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [preview, setPreview] = useState<DriftPreview | null>(null);
+  const [removeMissing, setRemoveMissing] = useState(false);
+  const dirty =
+    detail &&
+    (name !== detail.selection.name ||
+      JSON.stringify(ids.split(/\s+/).filter(Boolean)) !==
+        JSON.stringify(detail.selection.servers.map((server) => server.id)));
 
   function select(revision: CollectionRevision) {
     setDetail(revision);
+    setPreview(null);
     setName(revision.selection.name);
     setIds(revision.selection.servers.map((server) => server.id).join('\n'));
   }
@@ -51,7 +59,11 @@ export default function CollectionsView({
     }
   }
 
-  async function change(current: CollectionRevision, action: 'edit' | 'delete' | 'restore') {
+  async function change(
+    current: CollectionRevision,
+    action: 'edit' | 'delete' | 'restore' | 'update-catalog',
+  ) {
+    if (action === 'update-catalog' && !preview) return;
     setBusy(true);
     setError('');
     setNotice('');
@@ -61,6 +73,9 @@ export default function CollectionsView({
         {
           expected_revision: current.revision,
           ...(action === 'edit' ? { name, ids: ids.split(/\s+/).filter(Boolean) } : {}),
+          ...(action === 'update-catalog'
+            ? { preview_token: preview?.preview_token, remove_missing: removeMissing }
+            : {}),
         },
       );
       select(updated);
@@ -76,6 +91,21 @@ export default function CollectionsView({
           ? 'Collection deleted. Its history remains available for restoration.'
           : `Saved revision ${updated.revision}.`,
       );
+    } catch (cause) {
+      setError(String(cause instanceof Error ? cause.message : cause));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function inspectDrift() {
+    if (!detail) return;
+    setBusy(true);
+    setError('');
+    setPreview(null);
+    setRemoveMissing(false);
+    try {
+      setPreview(await api(`/collections/${detail.selection.id}/drift`));
     } catch (cause) {
       setError(String(cause instanceof Error ? cause.message : cause));
     } finally {
@@ -241,6 +271,82 @@ export default function CollectionsView({
                 Delete collection
               </button>
             </>
+          )}
+          {!detail.deleted && (
+            <section aria-label="Catalog changes">
+              <h3>Catalog changes</h3>
+              {dirty && <p>Save or reload your edits before previewing a catalog update.</p>}
+              <button
+                className="secondary"
+                disabled={busy || Boolean(dirty)}
+                onClick={() => void inspectDrift()}
+              >
+                Preview catalog update
+              </button>
+              {preview && (
+                <>
+                  <p>
+                    Compare saved records with catalog <code>{preview.snapshot.slice(0, 16)}</code>.
+                  </p>
+                  <div
+                    className="table-wrap"
+                    tabIndex={0}
+                    role="region"
+                    aria-label="Pinned server changes"
+                  >
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Server</th>
+                          <th>Pinned version</th>
+                          <th>Active version</th>
+                          <th>Changes</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {preview.changes.map((item) => (
+                          <tr key={item.before.id}>
+                            <td>{item.before.name}</td>
+                            <td>{item.before.version}</td>
+                            <td>{item.after?.version ?? 'Missing'}</td>
+                            <td>
+                              {!item.after
+                                ? 'Missing from the active catalog'
+                                : `${item.changed_fields.join(', ') || 'No record changes'}${item.after.status === 'deprecated' ? ' · deprecated' : ''}`}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {preview.changes.some((item) => !item.after) && (
+                    <label className="collection-toggle">
+                      <input
+                        type="checkbox"
+                        checked={removeMissing}
+                        onChange={(event) => setRemoveMissing(event.target.checked)}
+                      />
+                      Remove missing servers when updating
+                    </label>
+                  )}
+                  <button
+                    className="primary"
+                    disabled={
+                      busy ||
+                      Boolean(dirty) ||
+                      !preview.changes.some((item) => item.after) ||
+                      (preview.changes.some((item) => !item.after) && !removeMissing)
+                    }
+                    onClick={() => void change(detail, 'update-catalog')}
+                  >
+                    Update catalog pins
+                  </button>
+                  <button className="text-button" onClick={() => setPreview(null)}>
+                    Cancel catalog update
+                  </button>
+                </>
+              )}
+            </section>
           )}
           <h3>Revision history</h3>
           {history.map((item) => (

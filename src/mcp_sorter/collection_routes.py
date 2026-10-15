@@ -2,6 +2,7 @@ from collections.abc import Callable
 
 from fastapi import APIRouter, HTTPException
 
+from mcp_sorter.collection_drift import ApplyPreview, DriftPreview, apply_preview, preview_drift
 from mcp_sorter.runtime import Runtime
 from mcp_sorter.selections import (
     CollectionConflict,
@@ -56,5 +57,13 @@ def router(runtime: Callable[[], Runtime]) -> APIRouter:
         return _response(
             lambda: set_deleted(runtime(), identifier, request.expected_revision, deleted=False)
         )
+
+    @routes.get("/{identifier}/drift")
+    def drift(identifier: str) -> DriftPreview:
+        return _response(lambda: preview_drift(runtime(), identifier))
+
+    @routes.post("/{identifier}/update-catalog")
+    def update_catalog(identifier: str, request: ApplyPreview) -> CollectionRevision:
+        return _response(lambda: apply_preview(runtime(), identifier, request))
 
     return routes

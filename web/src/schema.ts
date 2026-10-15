@@ -101,6 +101,40 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/collections/{identifier}/drift': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Drift */
+    get: operations['drift_api_v1_collections__identifier__drift_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/collections/{identifier}/update-catalog': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Update Catalog */
+    post: operations['update_catalog_api_v1_collections__identifier__update_catalog_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/jobs': {
     parameters: {
       query?: never;
@@ -506,6 +540,18 @@ export interface components {
       /** Configuration */
       configuration: string;
     };
+    /** ApplyPreview */
+    ApplyPreview: {
+      /** Expected Revision */
+      expected_revision: number;
+      /** Preview Token */
+      preview_token: string;
+      /**
+       * Remove Missing
+       * @default false
+       */
+      remove_missing: boolean;
+    };
     /** CaseResult */
     CaseResult: {
       /** Id */
@@ -744,6 +790,19 @@ export interface components {
       development: number;
       /** Heldout */
       heldout: number;
+    };
+    /** DriftPreview */
+    DriftPreview: {
+      /** Collection Id */
+      collection_id: string;
+      /** Revision */
+      revision: number;
+      /** Snapshot */
+      snapshot: string;
+      /** Changes */
+      changes: components['schemas']['ServerChange'][];
+      /** Preview Token */
+      preview_token: string;
     };
     /** ErrorResponse */
     ErrorResponse: {
@@ -1067,6 +1126,13 @@ export interface components {
       /** Content Sha256 */
       content_sha256: string;
       selection: components['schemas']['Selection'];
+    };
+    /** ServerChange */
+    ServerChange: {
+      before: components['schemas']['ServerRecord'];
+      after: components['schemas']['ServerRecord'] | null;
+      /** Changed Fields */
+      changed_fields: string[];
     };
     /** ServerRecord */
     ServerRecord: {
@@ -1630,6 +1696,198 @@ export interface operations {
     requestBody: {
       content: {
         'application/json': components['schemas']['RevisionRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CollectionRevision'];
+        };
+      };
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Method Not Allowed */
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Content Too Large */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  drift_api_v1_collections__identifier__drift_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        identifier: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DriftPreview'];
+        };
+      };
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Method Not Allowed */
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Content Too Large */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  update_catalog_api_v1_collections__identifier__update_catalog_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        identifier: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ApplyPreview'];
       };
     };
     responses: {

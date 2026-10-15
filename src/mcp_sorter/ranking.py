@@ -207,7 +207,4 @@ def retrieve(
 def compare(catalog: Catalog, ids: list[str], snapshot: str | None = None) -> list[ServerRecord]:
     if not 2 <= len(ids) <= 4 or len(set(ids)) != len(ids):
         raise ValueError("Choose between two and four distinct servers")
-    records = {server.id: server for server in catalog.records(snapshot)}
-    if any(identifier not in records for identifier in ids):
-        raise ValueError("A selected server is missing from this snapshot")
-    return [records[identifier] for identifier in ids]
+    return catalog.records_by_ids(ids, snapshot)

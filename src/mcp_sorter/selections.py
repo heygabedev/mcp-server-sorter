@@ -38,15 +38,13 @@ def save_selection(
     runtime: Runtime, name: str, ids: list[str], snapshot: str | None = None
 ) -> Selection:
     snapshot = snapshot or runtime.catalog.active()
-    records = {record.id: record for record in runtime.catalog.records(snapshot)}
-    if any(identifier not in records for identifier in ids):
-        raise ValueError("A selected server is missing from this snapshot")
+    records = runtime.catalog.records_by_ids(ids, snapshot)
     selection = Selection(
         id=uuid4().hex,
         name=name,
         snapshot=snapshot,
         created_at=datetime.now(UTC),
-        servers=[records[identifier] for identifier in ids],
+        servers=records,
     )
     _insert(runtime, selection)
     return selection

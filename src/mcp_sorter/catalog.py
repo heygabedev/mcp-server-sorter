@@ -139,6 +139,21 @@ class Catalog:
                 for row in db.execute("SELECT payload FROM servers ORDER BY id")
             ]
 
+    def records_by_ids(self, ids: list[str], snapshot: str | None = None) -> list[ServerRecord]:
+        if not 1 <= len(ids) <= 50 or len(set(ids)) != len(ids):
+            raise ValueError("Choose between one and fifty distinct servers")
+        placeholders = ",".join("?" for _ in ids)
+        with self.connect(snapshot or self.active()) as db:
+            records = {
+                row[0]: ServerRecord.model_validate_json(row[1])
+                for row in db.execute(
+                    f"SELECT id,payload FROM servers WHERE id IN ({placeholders})", ids
+                )
+            }
+        if any(identifier not in records for identifier in ids):
+            raise ValueError("A selected server is missing from this snapshot")
+        return [records[identifier] for identifier in ids]
+
     def summary(self, snapshot: str) -> CatalogSummary:
         with self.connect(snapshot) as db:
             total, simulated = db.execute(

@@ -1164,3 +1164,32 @@ td {
 .ranking-evidence code {
   display: inline-block;
 }
+
+.collection-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 1rem;
+}
+
+.collection-editor {
+  margin-top: 1.5rem;
+}
+
+.collection-editor form {
+  display: grid;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.collection-editor input,
+.collection-editor textarea {
+  width: 100%;
+  max-width: 40rem;
+  padding: 0.75rem;
+  border: 1px solid #748184;
+  border-radius: 8px;
+  background: #fff;
+  color: #183934;
+  font: inherit;
+}

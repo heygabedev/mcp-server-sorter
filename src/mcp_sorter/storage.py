@@ -1,9 +1,12 @@
 import json
+from contextlib import nullcontext
 from pathlib import Path
 from typing import Any
 
 from alembic import command
 from alembic.config import Config
+from alembic.script import ScriptDirectory
+from filelock import FileLock
 from sqlalchemy import (
     Column,
     Engine,
@@ -28,7 +31,7 @@ activations = Table(
 )
 
 
-def open_state(directory: Path) -> Engine:
+def open_state(directory: Path, *, service_locked: bool = False) -> Engine:
     directory.mkdir(parents=True, exist_ok=True)
     engine = create_engine("sqlite:///" + str((directory / "state.sqlite").resolve()))
 
@@ -40,16 +43,27 @@ def open_state(directory: Path) -> Engine:
         connection.execute("PRAGMA synchronous=FULL")
 
     try:
-        with engine.begin() as db:
+        with FileLock(directory / ".migration.lock", timeout=30), engine.begin() as db:
+            db.exec_driver_sql("BEGIN IMMEDIATE")
+            config = Config()
+            config.set_main_option("script_location", str(Path(__file__).parent / "migrations"))
+            config.attributes["connection"] = db
             if inspect(db).has_table("state"):
                 version: str = db.execute(
                     text("SELECT value FROM state WHERE key='schema_version'")
                 ).scalar_one()
                 if version != "1":
                     raise ValueError(f"Unsupported state schema: {version}")
-            config = Config()
-            config.set_main_option("script_location", str(Path(__file__).parent / "migrations"))
-            config.attributes["connection"] = db
+                revision: str = db.execute(
+                    text("SELECT version_num FROM alembic_version")
+                ).scalar_one()
+                if revision != ScriptDirectory.from_config(config).get_current_head():
+                    from mcp_sorter.recovery import backup_directory, service_lock
+
+                    with nullcontext() if service_locked else service_lock(directory):
+                        backup_directory(directory)
+                        command.upgrade(config, "head")
+                    return engine
             command.upgrade(config, "head")
     except Exception:
         engine.dispose()

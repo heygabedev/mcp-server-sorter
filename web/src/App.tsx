@@ -243,9 +243,12 @@ export default function App() {
     }
   }
 
-  async function exportCollection(selection: Selection) {
+  async function exportCollection(selection: Selection, revision?: number) {
     try {
-      download(`selection-${selection.id}.json`, await api(`/collections/${selection.id}/export`));
+      download(
+        `selection-${selection.id}.json`,
+        await api(`/collections/${selection.id}/export${revision ? `?revision=${revision}` : ''}`),
+      );
     } catch (cause) {
       setError(message(cause));
     }
@@ -613,6 +616,7 @@ export default function App() {
               exportCollection={exportCollection}
               importCollection={importCollection}
               navigate={navigate}
+              reloadCollections={async () => setCollections(await api('/collections'))}
             />
           )}
           {tab === 'Evaluations' && (

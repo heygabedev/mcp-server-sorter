@@ -12,8 +12,7 @@ from filelock import FileLock
 from pydantic import BaseModel, ConfigDict, Field
 
 from mcp_sorter.artifacts import write_once
-from mcp_sorter.recovery import backup, digest, service_lock, state_revision
-from mcp_sorter.runtime import Runtime
+from mcp_sorter.recovery import backup_directory, digest, service_lock, state_revision
 from mcp_sorter.settings import Settings
 
 
@@ -136,11 +135,7 @@ def activate_release(settings: Settings, identifier: str) -> ReleasePointer:
                 raise ValueError("Target release cannot read the current state schema")
             if old is not None and old.active == identifier:
                 return old
-            runtime = Runtime(settings)
-            try:
-                previous_backup = backup(runtime).name
-            finally:
-                runtime.close()
+            previous_backup = backup_directory(settings.data_dir).name
         result = ReleasePointer(
             active=identifier, previous=old.active if old else None, backup=previous_backup
         )

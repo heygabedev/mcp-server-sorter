@@ -1,6 +1,45 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
+test('edits, exports, deletes and restores a collection with its history', async ({ page }) => {
+  await page.goto('/');
+  const name = `Revision journey ${Date.now()}`;
+  await page.request.post('/api/v1/collections', {
+    data: { name, ids: ['demo/github', 'demo/slack'] },
+  });
+  await page.getByRole('button', { name: 'Collections', exact: true }).click();
+  await page.getByRole('button', { name: `Manage ${name}`, exact: true }).click();
+  await page.getByLabel('Collection name', { exact: true }).fill(name + ' edited');
+  await page.getByLabel('Server IDs, one per line').fill('demo/github');
+  await page.getByRole('button', { name: 'Save changes', exact: true }).click();
+  await expect(page.getByText('Saved revision 2.', { exact: true })).toBeVisible();
+  const download = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Export revision 1', exact: true }).click();
+  expect((await download).suggestedFilename()).toContain('selection-');
+  await page.getByRole('button', { name: 'Delete collection', exact: true }).click();
+  await expect(page.getByText(/Collection deleted. Its history remains/)).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: `Manage ${name} edited`, exact: true }),
+  ).toHaveCount(0);
+  await page.getByLabel('Show deleted collections').check();
+  const deleted = page
+    .getByRole('region', { name: 'Deleted collections' })
+    .locator('article')
+    .filter({ has: page.getByRole('heading', { name: name + ' edited', exact: true }) });
+  await deleted.getByRole('button', { name: 'Restore collection', exact: true }).click();
+  await expect(page.getByText('Saved revision 4.', { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: `Manage ${name} edited`, exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Export revision/ })).toHaveCount(4);
+  await page.getByRole('button', { name: 'Preview catalog update', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Pinned server changes' })).toBeVisible();
+  await page.getByRole('button', { name: 'Update catalog pins', exact: true }).click();
+  await expect(page.getByText('Saved revision 5.', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Export revision/ })).toHaveCount(5);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+
 test('browses every deterministic page and resets pagination for a new query', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('.server-card')).toHaveCount(20);

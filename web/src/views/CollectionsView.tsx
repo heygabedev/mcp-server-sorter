@@ -1,18 +1,127 @@
 import { ArrowDownToLine, ArrowRight, Folder } from 'lucide-react';
-import type { Selection } from '../api';
+import { useState } from 'react';
+import type { CollectionRevision, DriftPreview, Selection } from '../api';
+import { api } from '../api';
 import PageTitle from './PageTitle';
 interface Props {
   collections: Selection[];
-  exportCollection: (selection: Selection) => Promise<void>;
+  exportCollection: (selection: Selection, revision?: number) => Promise<void>;
   importCollection: (file?: File) => Promise<void>;
   navigate: (tab: 'Discover') => Promise<void>;
+  reloadCollections: () => Promise<void>;
 }
 export default function CollectionsView({
   collections,
   exportCollection,
   importCollection,
   navigate,
+  reloadCollections,
 }: Props) {
+  const [detail, setDetail] = useState<CollectionRevision | null>(null);
+  const [history, setHistory] = useState<CollectionRevision[]>([]);
+  const [deleted, setDeleted] = useState<CollectionRevision[]>([]);
+  const [showDeleted, setShowDeleted] = useState(false);
+  const [name, setName] = useState('');
+  const [ids, setIds] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [preview, setPreview] = useState<DriftPreview | null>(null);
+  const [removeMissing, setRemoveMissing] = useState(false);
+  const dirty =
+    detail &&
+    (name !== detail.selection.name ||
+      JSON.stringify(ids.split(/\s+/).filter(Boolean)) !==
+        JSON.stringify(detail.selection.servers.map((server) => server.id)));
+
+  function select(revision: CollectionRevision) {
+    setDetail(revision);
+    setPreview(null);
+    setName(revision.selection.name);
+    setIds(revision.selection.servers.map((server) => server.id).join('\n'));
+  }
+
+  async function manage(id: string) {
+    setBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      const [current, revisions] = await Promise.all([
+        api<CollectionRevision>(`/collections/${id}`),
+        api<CollectionRevision[]>(`/collections/${id}/history`),
+      ]);
+      select(current);
+      setHistory(revisions);
+    } catch (cause) {
+      setError(String(cause instanceof Error ? cause.message : cause));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function change(
+    current: CollectionRevision,
+    action: 'edit' | 'delete' | 'restore' | 'update-catalog',
+  ) {
+    if (action === 'update-catalog' && !preview) return;
+    setBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      const updated = await api<CollectionRevision>(
+        `/collections/${current.selection.id}/${action}`,
+        {
+          expected_revision: current.revision,
+          ...(action === 'edit' ? { name, ids: ids.split(/\s+/).filter(Boolean) } : {}),
+          ...(action === 'update-catalog'
+            ? { preview_token: preview?.preview_token, remove_missing: removeMissing }
+            : {}),
+        },
+      );
+      select(updated);
+      const [revisions, removed] = await Promise.all([
+        api<CollectionRevision[]>(`/collections/${current.selection.id}/history`),
+        api<CollectionRevision[]>('/collections/deleted'),
+        reloadCollections(),
+      ]);
+      setHistory(revisions);
+      setDeleted(removed);
+      setNotice(
+        action === 'delete'
+          ? 'Collection deleted. Its history remains available for restoration.'
+          : `Saved revision ${updated.revision}.`,
+      );
+    } catch (cause) {
+      setError(String(cause instanceof Error ? cause.message : cause));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function inspectDrift() {
+    if (!detail) return;
+    setBusy(true);
+    setError('');
+    setPreview(null);
+    setRemoveMissing(false);
+    try {
+      setPreview(await api(`/collections/${detail.selection.id}/drift`));
+    } catch (cause) {
+      setError(String(cause instanceof Error ? cause.message : cause));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function toggleDeleted(checked: boolean) {
+    setShowDeleted(checked);
+    if (!checked) return;
+    try {
+      setDeleted(await api('/collections/deleted'));
+    } catch (cause) {
+      setError(String(cause instanceof Error ? cause.message : cause));
+    }
+  }
   return (
     <>
       <PageTitle
@@ -20,6 +129,16 @@ export default function CollectionsView({
         title="Keep the good connections."
         description="Pinned server versions and their evidence, ready to revisit or share."
       />
+      {error && (
+        <p role="alert" className="alert error">
+          {error}
+        </p>
+      )}
+      {notice && (
+        <p role="status" className="alert">
+          {notice}
+        </p>
+      )}
       <label className="secondary file-label">
         Import selection
         <input
@@ -27,6 +146,14 @@ export default function CollectionsView({
           accept="application/json,.json"
           onChange={(event) => void importCollection(event.target.files?.[0])}
         />
+      </label>
+      <label className="collection-toggle">
+        <input
+          type="checkbox"
+          checked={showDeleted}
+          onChange={(event) => void toggleDeleted(event.target.checked)}
+        />
+        Show deleted collections
       </label>
       {collections.length === 0 && (
         <div className="empty">
@@ -54,9 +181,191 @@ export default function CollectionsView({
               <ArrowDownToLine size={16} />
               Export selection
             </button>
+            <button
+              className="secondary"
+              disabled={busy}
+              onClick={() => void manage(item.id)}
+              aria-label={`Manage ${item.name}`}
+            >
+              Manage collection
+            </button>
           </article>
         ))}
       </div>
+      {showDeleted && (
+        <section aria-label="Deleted collections">
+          <h2>Deleted collections</h2>
+          {deleted.length === 0 && <p>No deleted collections.</p>}
+          {deleted.map((item) => (
+            <article className="panel" key={item.selection.id}>
+              <h3>{item.selection.name}</h3>
+              <p>Deleted at revision {item.revision}. Earlier revisions remain available.</p>
+              <button
+                className="secondary"
+                disabled={busy}
+                onClick={() => void manage(item.selection.id)}
+              >
+                Inspect deleted collection
+              </button>
+              <button
+                className="secondary"
+                disabled={busy}
+                onClick={() => void change(item, 'restore')}
+              >
+                Restore collection
+              </button>
+            </article>
+          ))}
+        </section>
+      )}
+      {detail && (
+        <section className="panel collection-editor" aria-label="Collection editor">
+          <h2>
+            {detail.selection.name} · revision {detail.revision}
+          </h2>
+          <button
+            className="text-button"
+            disabled={busy}
+            onClick={() => void manage(detail.selection.id)}
+          >
+            Reload collection
+          </button>
+          {detail.deleted ? (
+            <p>This collection is deleted. Restore it from deleted collections to edit it.</p>
+          ) : (
+            <>
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void change(detail, 'edit');
+                }}
+              >
+                <label htmlFor="edit-collection-name">Collection name</label>
+                <input
+                  id="edit-collection-name"
+                  value={name}
+                  required
+                  maxLength={80}
+                  onChange={(event) => setName(event.target.value)}
+                />
+                <label htmlFor="edit-collection-ids">Server IDs, one per line</label>
+                <textarea
+                  id="edit-collection-ids"
+                  value={ids}
+                  rows={5}
+                  required
+                  onChange={(event) => setIds(event.target.value)}
+                />
+                <p>
+                  Membership uses this collection’s pinned catalog. Existing records stay pinned.
+                </p>
+                <button className="primary" disabled={busy} type="submit">
+                  Save changes
+                </button>
+              </form>
+              <button
+                className="secondary"
+                disabled={busy}
+                onClick={() => void change(detail, 'delete')}
+              >
+                Delete collection
+              </button>
+            </>
+          )}
+          {!detail.deleted && (
+            <section aria-label="Catalog changes">
+              <h3>Catalog changes</h3>
+              {dirty && <p>Save or reload your edits before previewing a catalog update.</p>}
+              <button
+                className="secondary"
+                disabled={busy || Boolean(dirty)}
+                onClick={() => void inspectDrift()}
+              >
+                Preview catalog update
+              </button>
+              {preview && (
+                <>
+                  <p>
+                    Compare saved records with catalog <code>{preview.snapshot.slice(0, 16)}</code>.
+                  </p>
+                  <div
+                    className="table-wrap"
+                    tabIndex={0}
+                    role="region"
+                    aria-label="Pinned server changes"
+                  >
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Server</th>
+                          <th>Pinned version</th>
+                          <th>Active version</th>
+                          <th>Changes</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {preview.changes.map((item) => (
+                          <tr key={item.before.id}>
+                            <td>{item.before.name}</td>
+                            <td>{item.before.version}</td>
+                            <td>{item.after?.version ?? 'Missing'}</td>
+                            <td>
+                              {!item.after
+                                ? 'Missing from the active catalog'
+                                : `${item.changed_fields.join(', ') || 'No record changes'}${item.after.status === 'deprecated' ? ' · deprecated' : ''}`}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {preview.changes.some((item) => !item.after) && (
+                    <label className="collection-toggle">
+                      <input
+                        type="checkbox"
+                        checked={removeMissing}
+                        onChange={(event) => setRemoveMissing(event.target.checked)}
+                      />
+                      Remove missing servers when updating
+                    </label>
+                  )}
+                  <button
+                    className="primary"
+                    disabled={
+                      busy ||
+                      Boolean(dirty) ||
+                      !preview.changes.some((item) => item.after) ||
+                      (preview.changes.some((item) => !item.after) && !removeMissing)
+                    }
+                    onClick={() => void change(detail, 'update-catalog')}
+                  >
+                    Update catalog pins
+                  </button>
+                  <button className="text-button" onClick={() => setPreview(null)}>
+                    Cancel catalog update
+                  </button>
+                </>
+              )}
+            </section>
+          )}
+          <h3>Revision history</h3>
+          {history.map((item) => (
+            <div className="evidence" key={item.revision}>
+              <strong>
+                Revision {item.revision} · {item.selection.name}
+                {item.deleted ? ' · deleted' : ''}
+              </strong>
+              <p>{item.selection.servers.map((server) => server.name).join(' · ')}</p>
+              <button
+                className="text-button"
+                onClick={() => void exportCollection(item.selection, item.revision)}
+              >
+                Export revision {item.revision}
+              </button>
+            </div>
+          ))}
+        </section>
+      )}
     </>
   );
 }

@@ -22,6 +22,8 @@ from mcp_sorter.ranking import Ranking, RankRequest, query_expression, rank
 from mcp_sorter.storage import canonical
 from mcp_sorter.versioning import active_versions
 
+DatasetName = Literal["regression", "challenge"]
+
 
 class GoldenCase(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -42,23 +44,33 @@ class GoldenDataset(BaseModel):
     model_config = ConfigDict(extra="forbid")
     schema_version: Literal[1]
     version: str
-    kind: Literal["synthetic-regression"]
+    kind: Literal["synthetic-regression", "synthetic-challenge"]
     notice: str
     catalog_source_sha256: str
     cases: list[GoldenCase]
 
 
-def load_golden() -> GoldenDataset:
-    data = files("mcp_sorter.data").joinpath("golden.json").read_text("utf-8")
+def load_golden(name: DatasetName = "regression") -> GoldenDataset:
+    filename = {"regression": "golden.json", "challenge": "golden-challenge.json"}[name]
+    data = files("mcp_sorter.data").joinpath(filename).read_text("utf-8")
     dataset = GoldenDataset.model_validate_json(data)
     source = json.loads(files("mcp_sorter.data").joinpath("catalog.json").read_text("utf-8"))
     if hashlib.sha256(canonical(source).encode()).hexdigest() != dataset.catalog_source_sha256:
         raise ValueError("The golden dataset was authored against a different fixture catalog")
     validate_golden(dataset)
+    records = {s["id"]: s for s in source["records"]}
+    for case in dataset.cases:
+        if not case.relevance.keys() <= records.keys():
+            raise ValueError("Judgments refer to unknown catalog records")
+        known = {e["id"] for key in case.relevance for e in records[key]["evidence"]}
+        if set(case.evidence_ids) != known:
+            raise ValueError("Judgments must cite the relevant fixture evidence")
     return dataset
 
 
 def validate_golden(dataset: GoldenDataset) -> None:
+    if not dataset.cases:
+        raise ValueError("A dataset must contain at least one case")
     if len({case.id for case in dataset.cases}) != len(dataset.cases):
         raise ValueError("Duplicate evaluation case IDs")
     development = {c.intent_id for c in dataset.cases if c.split == "development"}
@@ -72,6 +84,32 @@ def validate_golden(dataset: GoldenDataset) -> None:
             raise ValueError("Abstention label conflicts with relevance judgments")
         if not set(case.expected_top) <= case.relevance.keys():
             raise ValueError("Expected top result is missing a relevance judgment")
+
+
+def pin_dataset(directory: Path, name: DatasetName) -> dict[str, str]:
+    dataset = load_golden(name)
+    payload = canonical(dataset.model_dump())
+    digest = hashlib.sha256(payload.encode()).hexdigest()
+    path = directory / "datasets" / f"{digest}.json"
+    try:
+        write_once(path, payload)
+    except FileExistsError:
+        if path.read_text("utf-8") != payload:
+            raise ValueError("Pinned dataset has changed") from None
+    return {"dataset": name, "dataset_sha256": digest, "dataset_version": dataset.version}
+
+
+def load_pinned_dataset(directory: Path, digest: str, version: str) -> GoldenDataset:
+    if not re.fullmatch(r"[a-f0-9]{64}", digest):
+        raise ValueError("Invalid dataset digest")
+    payload = (directory / "datasets" / f"{digest}.json").read_text("utf-8")
+    if hashlib.sha256(payload.encode()).hexdigest() != digest:
+        raise ValueError("Pinned dataset has changed")
+    dataset = GoldenDataset.model_validate_json(payload)
+    validate_golden(dataset)
+    if dataset.version != version:
+        raise ValueError("Pinned dataset version does not match")
+    return dataset
 
 
 def ranking_metrics(ids: list[str], relevance: dict[str, int]) -> dict[str, float | None]:
@@ -120,6 +158,7 @@ class EvaluationReport(BaseModel):
     dataset_sha256: str
     source_sha256: str
     execution_mode: str = "fixture"
+    dataset_kind: Literal["synthetic-regression", "synthetic-challenge"] = "synthetic-regression"
     profile: str = "baseline"
     provenance: dict[str, Any]
     cases: list[CaseResult]
@@ -244,6 +283,8 @@ def evaluate(
     return EvaluationReport(
         id=uuid4().hex,
         dataset_version=dataset.version,
+        dataset_kind=dataset.kind,
+        notice=dataset.notice,
         dataset_sha256=hashlib.sha256(canonical(dataset.model_dump()).encode()).hexdigest(),
         source_sha256=source_digest(),
         profile=profile,
@@ -278,7 +319,9 @@ def render_saved_report(directory: Path, identifier: str) -> None:
     report = EvaluationReport.model_validate_json(path.read_text("utf-8"))
     if report.id != identifier:
         raise ValueError("Evaluation report ID does not match its filename")
-    gate = gate_slice(report.cases, report.cases)
+    gate = gate_slice(
+        report.cases, report.cases, quality_gate=report.dataset_kind == "synthetic-regression"
+    )
     rows = "".join(
         f"<tr><td>{html.escape(c.id)}</td><td>{html.escape(', '.join(c.result_ids))}</td>"
         f"<td>{c.metrics['ndcg_at_5']}</td><td>{c.constraint_violations}</td>"
@@ -303,14 +346,16 @@ def render_saved_report(directory: Path, identifier: str) -> None:
 GATE_POLICY_VERSION = "fixture-regression-v2"
 
 
-def gate_slice(old: list[CaseResult], new: list[CaseResult]) -> dict[str, Any]:
+def gate_slice(
+    old: list[CaseResult], new: list[CaseResult], *, quality_gate: bool = True
+) -> dict[str, Any]:
     before, after = summarize(old), summarize(new)
     old_score, new_score = before["ndcg_at_5"], after["ndcg_at_5"]
     delta = new_score - old_score if new_score is not None and old_score is not None else None
     failures = []
-    if delta is not None and not delta >= -0.02 - 1e-12:
+    if quality_gate and delta is not None and not delta >= -0.02 - 1e-12:
         failures.append("ndcg-regression")
-    if after["abstention_accuracy"] != 1:
+    if quality_gate and after["abstention_accuracy"] != 1:
         failures.append("incorrect-abstention")
     for metric in (
         "constraint_violations",
@@ -329,6 +374,7 @@ def compare_reports(baseline: EvaluationReport, candidate: EvaluationReport) -> 
         baseline.dataset_sha256 != candidate.dataset_sha256
         or baseline.provenance["snapshot"] != candidate.provenance["snapshot"]
         or baseline.execution_mode != candidate.execution_mode
+        or baseline.dataset_kind != candidate.dataset_kind
     ):
         raise ValueError("Paired comparisons require identical datasets and snapshots")
     old = {case.id: case for case in baseline.cases}
@@ -363,11 +409,13 @@ def compare_reports(baseline: EvaluationReport, candidate: EvaluationReport) -> 
         else []
     )
     delta = sum(differences) / len(differences) if differences else None
-    slices = {"overall": gate_slice(baseline.cases, candidate.cases)}
+    quality_gate = candidate.dataset_kind == "synthetic-regression"
+    slices = {"overall": gate_slice(baseline.cases, candidate.cases, quality_gate=quality_gate)}
     for split in sorted({c.split for c in candidate.cases}):
         slices[split] = gate_slice(
             [c for c in baseline.cases if c.split == split],
             [c for c in candidate.cases if c.split == split],
+            quality_gate=quality_gate,
         )
     failures = [
         {"scope": scope, "code": code}
@@ -378,6 +426,8 @@ def compare_reports(baseline: EvaluationReport, candidate: EvaluationReport) -> 
         "ndcg_delta": delta,
         "ci95": [boot[24], boot[974]] if boot else None,
         "passes_regression_gate": not failures,
+        "gate_scope": "regression" if quality_gate else "integrity-only",
+        "quality_is_diagnostic": not quality_gate,
         "gate_policy_version": GATE_POLICY_VERSION,
         "failures": failures,
         "slices": slices,

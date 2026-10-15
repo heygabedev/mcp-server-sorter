@@ -1,11 +1,13 @@
 import { ArrowDownToLine, ArrowRight, ChevronRight } from 'lucide-react';
 import { api, download } from '../api';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Profile, Report, WorkspaceInfo } from '../api';
 import { profiles } from '../profiles';
 import PageTitle from './PageTitle';
 interface Props {
   dataset: WorkspaceInfo['evaluation_dataset'] | null;
+  datasetName: 'regression' | 'challenge';
+  setDatasetName: (name: 'regression' | 'challenge') => void;
   profile: Profile;
   setProfile: (profile: Profile) => void;
   busy: boolean;
@@ -16,6 +18,8 @@ interface Props {
 }
 export default function EvaluationsView({
   dataset,
+  datasetName,
+  setDatasetName,
   profile,
   setProfile,
   busy,
@@ -34,6 +38,13 @@ export default function EvaluationsView({
   const cost = report?.summary.cost_usd;
   const [baseline, setBaseline] = useState('');
   const [comparison, setComparison] = useState('');
+  useEffect(() => {
+    setComparison('');
+    setBaseline('');
+  }, [report?.id]);
+  const challenge = report
+    ? report.dataset_kind === 'synthetic-challenge'
+    : datasetName === 'challenge';
   async function compare() {
     if (!report || !baseline) return;
     try {
@@ -43,9 +54,10 @@ export default function EvaluationsView({
         passes_regression_gate: boolean;
         gate_policy_version: string;
         failures: { scope: string; code: string }[];
+        quality_is_diagnostic?: boolean;
       }>(`/evaluation-comparison?baseline=${baseline}&candidate=${report.id}`);
       setComparison(
-        `NDCG@5 change: ${result.ndcg_delta?.toFixed(3) ?? 'n/a'}. Paired regression gate: ${result.passes_regression_gate ? 'passed' : 'failed'}. 95% interval: ${result.ci95?.map((v) => v.toFixed(3)).join(' to ') ?? 'n/a'}. Policy: ${result.gate_policy_version}. ${result.failures.map((failure) => `${failure.scope}: ${failure.code.replaceAll(/[-_]/g, ' ')}`).join('; ')}`,
+        `NDCG@5 change: ${result.ndcg_delta?.toFixed(3) ?? 'n/a'}. ${result.quality_is_diagnostic ? 'Integrity checks' : 'Paired regression gate'}: ${result.passes_regression_gate ? 'passed' : 'failed'}. 95% interval: ${result.ci95?.map((v) => v.toFixed(3)).join(' to ') ?? 'n/a'}. Policy: ${result.gate_policy_version}. ${result.failures.map((failure) => `${failure.scope}: ${failure.code.replaceAll(/[-_]/g, ' ')}`).join('; ')}`,
       );
     } catch (cause) {
       setComparison(cause instanceof Error ? cause.message : 'Comparison failed');
@@ -75,6 +87,15 @@ export default function EvaluationsView({
         </div>
         <div className="eval-actions">
           <select
+            aria-label="Evaluation dataset"
+            value={datasetName}
+            disabled={busy}
+            onChange={(event) => setDatasetName(event.target.value as 'regression' | 'challenge')}
+          >
+            <option value="regression">Regression fixtures</option>
+            <option value="challenge">Realistic mock challenges</option>
+          </select>
+          <select
             aria-label="Evaluation profile"
             value={profile}
             onChange={(event) => setProfile(event.target.value as Profile)}
@@ -92,7 +113,10 @@ export default function EvaluationsView({
         </div>
       </div>
       <p className="caption">
-        Synthetic regression benchmark. These results do not measure live model quality.
+        {challenge
+          ? 'Challenge quality scores are diagnostic, not release gates. Constraint and evidence checks still apply.'
+          : 'Synthetic regression benchmark.'}{' '}
+        These results do not measure live model quality.
       </p>
       {report && (
         <section className="panel report">
@@ -103,11 +127,18 @@ export default function EvaluationsView({
               onChange={(event) => setBaseline(event.target.value)}
             >
               <option value="">Choose a baseline report</option>
-              {reports.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.profile} · {item.id.slice(0, 8)}
-                </option>
-              ))}
+              {reports
+                .filter(
+                  (item) =>
+                    item.dataset_sha256 === report.dataset_sha256 &&
+                    item.provenance?.snapshot === report.provenance?.snapshot &&
+                    item.execution_mode === report.execution_mode,
+                )
+                .map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.profile} · {item.id.slice(0, 8)}
+                  </option>
+                ))}
             </select>
             <button className="secondary" disabled={!baseline} onClick={() => void compare()}>
               Compare baseline
@@ -121,7 +152,7 @@ export default function EvaluationsView({
           <div className="section-heading">
             <div>
               <span className="eyebrow">LATEST RESULT · {report.profile}</span>
-              <h2>Golden dataset report</h2>
+              <h2>{challenge ? 'Mock challenge report' : 'Golden dataset report'}</h2>
             </div>
             <button
               className="secondary"

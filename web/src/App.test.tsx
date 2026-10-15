@@ -24,6 +24,10 @@ function mockEndpoints(overrides: Record<string, unknown> = {}) {
     '/api/v1/rankings': ranking,
     '/api/v1/collections': [],
     '/api/v1/evaluations': [],
+    '/api/v1/evaluation-datasets': {
+      regression: workspace.evaluation_dataset,
+      challenge: { version: 'golden-challenge-v1', total: 60, development: 20, heldout: 40 },
+    },
     ...overrides,
   };
   vi.mocked(fetch).mockImplementation(async (path) => {
@@ -71,6 +75,44 @@ test('shows the failed evaluation scope and reason', async () => {
   expect(await screen.findByText(/heldout: incorrect abstention/)).toHaveTextContent(
     'Paired regression gate: failed',
   );
+});
+
+test('submits the selected challenge dataset and labels its quality as diagnostic', async () => {
+  const report = {
+    id: 'challenge-report',
+    profile: 'baseline',
+    cases: [],
+    summary: {},
+    dataset_kind: 'synthetic-challenge',
+    dataset_version: 'golden-challenge-v1',
+  };
+  const job = {
+    id: 'challenge-job',
+    status: 'completed',
+    result: JSON.stringify({ report_id: report.id }),
+  };
+  mockEndpoints({
+    '/api/v1/jobs': job,
+    '/api/v1/jobs/challenge-job': job,
+    '/api/v1/evaluations/challenge-report': report,
+  });
+  render(<App />);
+  await screen.findByRole('button', { name: 'GitHub' });
+  fireEvent.click(screen.getByRole('button', { name: 'Evaluations' }));
+  await screen.findByText('12');
+  fireEvent.change(screen.getByLabelText('Evaluation dataset'), { target: { value: 'challenge' } });
+  expect(await screen.findByText('60')).toBeInTheDocument();
+  expect(screen.getByText('20 / 40')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Run evaluation' }));
+  await screen.findByRole('heading', { name: 'Mock challenge report' });
+  expect(screen.getByText(/quality scores are diagnostic, not release gates/)).toBeInTheDocument();
+  const [, init] = vi.mocked(fetch).mock.calls.find(([path]) => path === '/api/v1/jobs')!;
+  expect(JSON.parse(String(init?.body))).toEqual({
+    kind: 'evaluation',
+    profile: 'baseline',
+    dataset: 'challenge',
+    idempotency_key: expect.any(String),
+  });
 });
 
 test('loads the catalog and exposes inspectable details', async () => {

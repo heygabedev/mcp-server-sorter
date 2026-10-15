@@ -1294,6 +1294,108 @@
         }
       }
     },
+    "/api/v1/evaluation-datasets": {
+      "get": {
+        "summary": "Evaluation Datasets",
+        "operationId": "evaluation_datasets_api_v1_evaluation_datasets_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/DatasetSummary"
+                  },
+                  "type": "object",
+                  "title": "Response Evaluation Datasets Api V1 Evaluation Datasets Get"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Content Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/evaluations/{identifier}": {
       "get": {
         "summary": "Evaluation Report",
@@ -2922,6 +3024,12 @@
             "title": "Execution Mode",
             "default": "fixture"
           },
+          "dataset_kind": {
+            "type": "string",
+            "enum": ["synthetic-regression", "synthetic-challenge"],
+            "title": "Dataset Kind",
+            "default": "synthetic-regression"
+          },
           "profile": {
             "type": "string",
             "title": "Profile",
@@ -3010,6 +3118,12 @@
             ],
             "title": "Profile",
             "default": "baseline"
+          },
+          "dataset": {
+            "type": "string",
+            "enum": ["regression", "challenge"],
+            "title": "Dataset",
+            "default": "regression"
           }
         },
         "type": "object",
@@ -3123,6 +3237,12 @@
             "type": "string",
             "enum": ["evaluation", "catalog-refresh"],
             "title": "Kind"
+          },
+          "dataset": {
+            "type": "string",
+            "enum": ["regression", "challenge"],
+            "title": "Dataset",
+            "default": "regression"
           },
           "idempotency_key": {
             "type": "string",

@@ -61,6 +61,76 @@ def test_golden_dataset_shape_and_leakage_guards():
             validate_golden(invalid)
 
 
+def test_challenge_cases_are_separate_diagnostic_judgments(runtime):
+    dataset = load_golden("challenge")
+    assert len(dataset.cases) == 60
+    assert sum(c.split == "development" for c in dataset.cases) == 20
+    assert sum(c.split == "heldout" for c in dataset.cases) == 40
+    assert any(len(c.relevance) > 1 for c in dataset.cases)
+    assert {grade for c in dataset.cases for grade in c.relevance.values()} == {1, 2, 3}
+    assert all(c.review_status == "fixture-authored" and c.rationale for c in dataset.cases)
+    report = evaluate(runtime.catalog, dataset)
+    again = evaluate(runtime.catalog, dataset)
+    assert [c.result_ids for c in report.cases] == [c.result_ids for c in again.cases]
+    assert report.summary["abstention_accuracy"] < 1
+    comparison = compare_reports(report, again)
+    assert comparison["quality_is_diagnostic"] and comparison["passes_regression_gate"]
+    assert comparison["gate_scope"] == "integrity-only"
+    again.cases[0].invalid_evidence_references = 1
+    assert not compare_reports(report, again)["passes_regression_gate"]
+    with pytest.raises(ValueError, match="identical datasets"):
+        compare_reports(evaluate(runtime.catalog), report)
+
+
+def test_dataset_pin_rejects_corruption_and_mismatched_versions(tmp_path):
+    from mcp_sorter.evaluation import load_pinned_dataset, pin_dataset
+
+    pin = pin_dataset(tmp_path, "challenge")
+    assert pin_dataset(tmp_path, "challenge") == pin
+    assert load_pinned_dataset(tmp_path, pin["dataset_sha256"], pin["dataset_version"]).cases
+    with pytest.raises(ValueError, match="version"):
+        load_pinned_dataset(tmp_path, pin["dataset_sha256"], "wrong")
+    with pytest.raises(ValueError, match="digest"):
+        load_pinned_dataset(tmp_path, "../bad", "wrong")
+    (tmp_path / "datasets" / f"{pin['dataset_sha256']}.json").write_text("corrupt")
+    with pytest.raises(ValueError, match="changed"):
+        load_pinned_dataset(tmp_path, pin["dataset_sha256"], pin["dataset_version"])
+    with pytest.raises(ValueError, match="changed"):
+        pin_dataset(tmp_path, "challenge")
+
+
+@pytest.mark.parametrize("fault", ["catalog-hash", "unknown-record", "missing-evidence", "empty"])
+def test_dataset_loader_rejects_poisoned_judgments(tmp_path, monkeypatch, fault):
+    source = files("mcp_sorter.data")
+    dataset = json.loads(source.joinpath("golden.json").read_text("utf-8"))
+    (tmp_path / "catalog.json").write_text(source.joinpath("catalog.json").read_text("utf-8"))
+    if fault == "catalog-hash":
+        dataset["catalog_source_sha256"] = "invalid"
+    elif fault == "unknown-record":
+        dataset["cases"][0]["relevance"] = {"absent": 3}
+        dataset["cases"][0]["expected_top"] = ["absent"]
+    elif fault == "missing-evidence":
+        dataset["cases"][0]["evidence_ids"] = []
+    else:
+        dataset["cases"] = []
+    (tmp_path / "golden.json").write_text(json.dumps(dataset))
+    monkeypatch.setattr("mcp_sorter.evaluation.files", lambda _: tmp_path)
+    with pytest.raises(ValueError):
+        load_golden()
+
+
+def test_challenge_dataset_is_selectable_through_api_and_cli(tmp_path, monkeypatch):
+    monkeypatch.setenv("SORTER_DATA_DIR", str(tmp_path))
+    with TestClient(create_app(Settings(data_dir=tmp_path, worker_enabled=False))) as http:
+        assert http.get("/api/v1/evaluation-datasets").json()["challenge"]["total"] == 60
+        report = http.post("/api/v1/evaluations", json={"dataset": "challenge"}).json()
+        assert report["dataset_kind"] == "synthetic-challenge" and len(report["cases"]) == 60
+        assert http.post("/api/v1/evaluations", json={"dataset": "../invalid"}).status_code == 422
+    result = CliRunner().invoke(app, ["eval", "run", "--dataset", "challenge"])
+    assert result.exit_code == 0
+    assert json.loads(result.stdout)["dataset_version"] == "golden-challenge-v1"
+
+
 def test_golden_run_is_repeatable_and_cites_only_known_evidence(runtime):
     first = evaluate(runtime.catalog)
     second = evaluate(runtime.catalog)

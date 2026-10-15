@@ -1,4 +1,5 @@
 import json
+import shutil
 import sqlite3
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing
@@ -22,7 +23,15 @@ from mcp_sorter.recovery import (
     validate_backup,
 )
 from mcp_sorter.runtime import Runtime
-from mcp_sorter.selections import list_selections, save_selection
+from mcp_sorter.selections import (
+    CollectionEdit,
+    current_revision,
+    edit_selection,
+    history,
+    list_selections,
+    save_selection,
+    set_deleted,
+)
 from mcp_sorter.settings import Settings
 from mcp_sorter.versioning import Configuration, activate, active_versions
 
@@ -99,6 +108,118 @@ def test_restore_requires_stopped_service(runtime, tmp_path):
     path = backup(runtime)
     with service_lock(runtime.settings.data_dir), pytest.raises(Timeout):
         restore(runtime, path, tmp_path.parent / "stopped-service-copy")
+
+
+def test_restore_keeps_deleted_collections_and_all_newer_revisions(runtime, tmp_path):
+    saved = save_selection(runtime, "Original", ["demo/github"])
+    old = backup(runtime)
+    edit_selection(runtime, saved.id, CollectionEdit(expected_revision=1, name="Edited later"))
+    deleted = set_deleted(runtime, saved.id, 2, deleted=True)
+    records = [
+        s.model_copy(update={"version": "3-demo"}) if s.id == "demo/github" else s
+        for s in runtime.catalog.records()
+    ]
+    snapshot = runtime.catalog.publish(records, "2026-10-10T00:00:00Z")
+    runtime.catalog.activate(snapshot)
+    newer = save_selection(runtime, "New catalog", ["demo/github"], snapshot)
+    destination = tmp_path.parent / (tmp_path.name + "-history")
+    restore(runtime, old, destination)
+    restored = Runtime(Settings(data_dir=destination))
+    try:
+        assert list_selections(restored) == [newer]
+        assert current_revision(restored, saved.id) == deleted
+        assert history(restored, saved.id) == history(runtime, saved.id)
+        assert restored.catalog.records_by_ids(["demo/github"], snapshot) == newer.servers
+        set_deleted(restored, saved.id, 3, deleted=False)
+        assert len(history(restored, saved.id)) == 4
+        validate_backup(backup(restored))
+    finally:
+        restored.close()
+
+
+@pytest.mark.parametrize("divergent", [False, True])
+def test_restore_rejects_conflicting_histories_without_publishing_destination(
+    runtime, tmp_path, divergent
+):
+    saved = save_selection(runtime, "Original", ["demo/github"])
+    original = backup(runtime)
+    edit_selection(runtime, saved.id, CollectionEdit(expected_revision=1, name="Branch one"))
+    newer = backup(runtime)
+    branch_dir = tmp_path / "branch"
+    manifest = validate_backup(original)
+    for name in manifest.files:
+        target = branch_dir / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(original / name, target)
+    branch = Runtime(Settings(data_dir=branch_dir))
+    destination = tmp_path.parent / (tmp_path.name + "-conflict")
+    try:
+        if divergent:
+            edit_selection(branch, saved.id, CollectionEdit(expected_revision=1, name="Branch two"))
+        before = history(branch, saved.id)
+        with pytest.raises(
+            ValueError, match="diverged" if divergent else "newer collection history"
+        ):
+            restore(branch, newer, destination)
+        assert history(branch, saved.id) == before
+        assert not destination.exists()
+    finally:
+        branch.close()
+
+
+@pytest.mark.parametrize(
+    "damage", ["zero", "huge", "missing", "gap", "payload", "identity", "orphan"]
+)
+def test_backup_validation_checks_collection_revision_integrity(runtime, damage):
+    saved = save_selection(runtime, "Original", ["demo/github"])
+    path = backup(runtime)
+    with closing(sqlite3.connect(path / "state.sqlite")) as db, db:
+        db.execute("DROP TRIGGER collection_history_no_update")
+        db.execute("DROP TRIGGER collection_history_no_delete")
+        if damage == "zero":
+            db.execute("UPDATE collections SET current_revision=0")
+        elif damage == "huge":
+            db.execute("UPDATE collections SET current_revision=9223372036854775807")
+        elif damage == "gap":
+            db.execute("UPDATE collection_revisions SET revision=2")
+        elif damage == "missing":
+            db.execute("DELETE FROM collection_revisions")
+        elif damage == "payload":
+            db.execute("UPDATE collections SET payload=json_set(payload,'$.name','Different')")
+        elif damage == "identity":
+            payload = saved.model_copy(update={"id": "0" * 32}).model_dump_json()
+            db.execute("UPDATE collections SET payload=?", (payload,))
+            db.execute("UPDATE collection_revisions SET payload=?", (payload,))
+        else:
+            db.execute("UPDATE collection_revisions SET collection_id=?", ("0" * 32,))
+    manifest = json.loads((path / "manifest.json").read_text())
+    manifest["files"]["state.sqlite"] = digest(path / "state.sqlite")
+    (path / "manifest.json").write_text(json.dumps(manifest))
+    with pytest.raises(ValueError, match="Collection history"):
+        validate_backup(path)
+
+
+def test_restore_rejects_catalog_changed_while_copying_newer_collection_pins(
+    runtime, tmp_path, monkeypatch
+):
+    source = backup(runtime)
+    snapshot = runtime.catalog.publish(runtime.catalog.records(), "2026-10-11T00:00:00Z")
+    save_selection(runtime, "Later pin", ["demo/github"], snapshot)
+    copy = shutil.copyfile
+
+    def altered(source, destination):
+        result = copy(source, destination)
+        if destination.name == f"{snapshot}.sqlite" and destination.parent.parent.name.startswith(
+            ".restore-"
+        ):
+            destination.write_bytes(b"changed")
+        return result
+
+    monkeypatch.setattr("mcp_sorter.recovery.shutil.copyfile", altered)
+    destination = tmp_path.parent / (tmp_path.name + "-catalog-race")
+    with pytest.raises(ValueError, match="Preserved catalog changed"):
+        restore(runtime, source, destination)
+    assert not destination.exists()
 
 
 def test_restore_upgrades_previous_state_revision_and_recovers_running_jobs(runtime, tmp_path):

@@ -160,6 +160,8 @@ def validate_backup(directory: Path) -> BackupManifest:
                 if report_id and f"reports/{report_id}.json" not in manifest.files:
                     raise ValueError("Backup is missing a completed evaluation report")
         if manifest.state_revision == "0006":
+            if db.execute("PRAGMA foreign_key_check").fetchone() is not None:
+                raise ValueError("Collection history contains an orphaned revision")
             for identifier, payload, revision, deleted in db.execute(
                 "SELECT id,payload,current_revision,deleted FROM collections"
             ):
@@ -170,7 +172,8 @@ def validate_backup(directory: Path) -> BackupManifest:
                 ).fetchall()
                 if (
                     revision < 1
-                    or [row[0] for row in rows] != list(range(1, revision + 1))
+                    or len(rows) != revision
+                    or any(row[0] != index for index, row in enumerate(rows, 1))
                     or rows[-1][1:] != (payload, deleted)
                 ):
                     raise ValueError("Collection history does not match its current revision")
@@ -269,6 +272,19 @@ def restore(runtime: Runtime, source: Path, destination: Path) -> dict[str, str]
                 snapshot, configuration = active_versions(restored.engine)
                 restored.catalog.validate(snapshot)
                 restored.configurations.load(configuration)
+                preserved = BackupManifest.model_validate_json(
+                    (before / "manifest.json").read_text("utf-8")
+                )
+                for snapshot in {
+                    Selection.model_validate_json(row[2]).snapshot for row in revisions
+                }:
+                    name = f"catalogs/{snapshot}.sqlite"
+                    target = staging / name
+                    if name in preserved.files and not target.exists():
+                        shutil.copyfile(before / name, target)
+                        if digest(target) != preserved.files[name]:
+                            raise ValueError("Preserved catalog changed during restoration")
+                        restored.catalog.validate(snapshot)
             finally:
                 restored.close()
             write_once(

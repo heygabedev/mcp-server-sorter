@@ -152,6 +152,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/catalog/search': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Catalog Search */
+    post: operations['catalog_search_api_v1_catalog_search_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/comparisons': {
     parameters: {
       query?: never;
@@ -427,6 +444,94 @@ export interface components {
       model_metadata?: {
         [key: string]: unknown;
       };
+    };
+    /** CatalogPage */
+    CatalogPage: {
+      /**
+       * Schema Version
+       * @default 1
+       */
+      schema_version: number;
+      /**
+       * Application Version
+       * @default 0.1.1
+       */
+      application_version: string;
+      /** Snapshot */
+      snapshot: string;
+      /**
+       * Configuration
+       * @default
+       */
+      configuration: string;
+      /**
+       * Prompt Version
+       * @default evidence-order-v1
+       */
+      prompt_version: string;
+      /**
+       * Model Profiles Version
+       * @default profiles-v1
+       */
+      model_profiles_version: string;
+      /** As Of */
+      as_of: string;
+      /**
+       * Policy Version
+       * @default bm25-evidence-v1
+       */
+      policy_version: string;
+      /**
+       * Sqlite Version
+       * @default 3.50.4
+       */
+      sqlite_version: string;
+      /**
+       * Mode
+       * @default deterministic
+       */
+      mode: string;
+      /** Query */
+      query: string;
+      filters: components['schemas']['Filters'];
+      /** Results */
+      results: components['schemas']['RankedServer'][];
+      /** Fallback Reason */
+      fallback_reason?: string | null;
+      /** Model Metadata */
+      model_metadata?: {
+        [key: string]: unknown;
+      };
+      /** Total */
+      total: number;
+      /** Next Cursor */
+      next_cursor?: string | null;
+    };
+    /** CatalogSearch */
+    CatalogSearch: {
+      /**
+       * Query
+       * @default
+       */
+      query: string;
+      filters?: components['schemas']['Filters'];
+      /** Snapshot */
+      snapshot?: string | null;
+      /** Configuration */
+      configuration?: string | null;
+      /**
+       * Limit
+       * @default 20
+       */
+      limit: number;
+      /**
+       * Profile
+       * @default baseline
+       * @constant
+       */
+      profile: 'baseline';
+      /** Cursor */
+      cursor?: string | null;
     };
     /** CatalogSummary */
     CatalogSummary: {
@@ -1687,6 +1792,102 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['Ranking'];
+        };
+      };
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Method Not Allowed */
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Content Too Large */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  catalog_search_api_v1_catalog_search_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CatalogSearch'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CatalogPage'];
         };
       };
       /** @description Bad Request */

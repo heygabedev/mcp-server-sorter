@@ -967,6 +967,114 @@
         }
       }
     },
+    "/api/v1/catalog/search": {
+      "post": {
+        "summary": "Catalog Search",
+        "operationId": "catalog_search_api_v1_catalog_search_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogSearch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Content Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/comparisons": {
       "post": {
         "summary": "Comparisons",
@@ -2800,6 +2908,170 @@
           "latency_ms"
         ],
         "title": "CaseResult"
+      },
+      "CatalogPage": {
+        "properties": {
+          "schema_version": {
+            "type": "integer",
+            "title": "Schema Version",
+            "default": 1
+          },
+          "application_version": {
+            "type": "string",
+            "title": "Application Version",
+            "default": "0.1.1"
+          },
+          "snapshot": {
+            "type": "string",
+            "title": "Snapshot"
+          },
+          "configuration": {
+            "type": "string",
+            "title": "Configuration",
+            "default": ""
+          },
+          "prompt_version": {
+            "type": "string",
+            "title": "Prompt Version",
+            "default": "evidence-order-v1"
+          },
+          "model_profiles_version": {
+            "type": "string",
+            "title": "Model Profiles Version",
+            "default": "profiles-v1"
+          },
+          "as_of": {
+            "type": "string",
+            "title": "As Of"
+          },
+          "policy_version": {
+            "type": "string",
+            "title": "Policy Version",
+            "default": "bm25-evidence-v1"
+          },
+          "sqlite_version": {
+            "type": "string",
+            "title": "Sqlite Version",
+            "default": "3.50.4"
+          },
+          "mode": {
+            "type": "string",
+            "title": "Mode",
+            "default": "deterministic"
+          },
+          "query": {
+            "type": "string",
+            "title": "Query"
+          },
+          "filters": {
+            "$ref": "#/components/schemas/Filters"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/RankedServer"
+            },
+            "type": "array",
+            "title": "Results"
+          },
+          "fallback_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fallback Reason"
+          },
+          "model_metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Model Metadata"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "type": "object",
+        "required": ["snapshot", "as_of", "query", "filters", "results", "total"],
+        "title": "CatalogPage"
+      },
+      "CatalogSearch": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Query",
+            "default": ""
+          },
+          "filters": {
+            "$ref": "#/components/schemas/Filters"
+          },
+          "snapshot": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snapshot"
+          },
+          "configuration": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Configuration"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 50.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "default": 20
+          },
+          "profile": {
+            "type": "string",
+            "const": "baseline",
+            "title": "Profile",
+            "default": "baseline"
+          },
+          "cursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4096,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cursor"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "CatalogSearch"
       },
       "CatalogSummary": {
         "properties": {

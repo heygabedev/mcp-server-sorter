@@ -170,6 +170,22 @@ def work_once() -> None:
         runtime.close()
 
 
+@jobs_app.command("retry")
+def retry_failed_job(identifier: str, key: str) -> None:
+    """Create a linked retry of a failed job, preserving its original input pins."""
+    from mcp_sorter.job_retry import RetryRequest, retry_job
+
+    runtime = Runtime(Settings())
+    try:
+        typer.echo(
+            json.dumps(retry_job(runtime, identifier, RetryRequest(idempotency_key=key)), indent=2)
+        )
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
+    finally:
+        runtime.close()
+
+
 @app.command("status")
 def operations_status() -> None:
     """Inspect local jobs, fallback events and alert conditions."""

@@ -9,6 +9,7 @@ from starlette.responses import Response
 from mcp_sorter.evaluation import EvaluationReport, compare_reports, report_path
 from mcp_sorter.events import recent_events
 from mcp_sorter.job_diagnostics import JobView
+from mcp_sorter.job_retry import RetryRequest, retry_job
 from mcp_sorter.jobs import JobRequest, enqueue, get_job, list_jobs
 from mcp_sorter.runtime import Runtime
 from mcp_sorter.telemetry import Telemetry
@@ -54,6 +55,13 @@ def router(get_runtime: Callable[[], Runtime], get_telemetry: Callable[[], Telem
     @routes.get("/api/v1/operations")
     def operations() -> dict[str, object]:
         return {**status(get_runtime()), "traces": get_telemetry().spans.snapshot()}
+
+    @routes.post("/api/v1/jobs/{identifier}/retry", status_code=202, response_model=JobView)
+    def retry(identifier: str, request: RetryRequest) -> dict[str, object]:
+        try:
+            return retry_job(get_runtime(), identifier, request)
+        except ValueError as exc:
+            raise HTTPException(404 if str(exc) == "Job not found" else 409, str(exc)) from exc
 
     @routes.get("/metrics", include_in_schema=False)
     def metrics() -> Response:

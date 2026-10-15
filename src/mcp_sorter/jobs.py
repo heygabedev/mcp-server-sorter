@@ -65,7 +65,8 @@ def enqueue(runtime: Runtime, request: JobRequest) -> dict[str, Any]:
         if old:
             original = json.loads(old["payload"])
             if (
-                any(original[k] != payload[k] for k in ("kind", "profile"))
+                old["parent_job_id"] is not None
+                or any(original[k] != payload[k] for k in ("kind", "profile"))
                 or original.get("dataset", "regression") != request.dataset
             ):
                 raise ValueError("Idempotency key already belongs to a different request")

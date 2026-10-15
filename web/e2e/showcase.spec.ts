@@ -1,6 +1,70 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
+test('inspects failed attempts and retries through a controlled failure fixture', async ({
+  page,
+}) => {
+  const failed = {
+    id: 'a'.repeat(32),
+    status: 'failed',
+    attempts: 3,
+    payload: '{"kind":"evaluation"}',
+    error_code: 'timeout',
+    result: null,
+    attempt_history: [
+      {
+        attempt: 3,
+        started_at: 100,
+        finished_at: 101,
+        outcome: 'failed',
+        error_code: 'timeout',
+        trace_id: 'c'.repeat(32),
+      },
+    ],
+  };
+  const retried = {
+    ...failed,
+    id: 'b'.repeat(32),
+    parent_job_id: failed.id,
+    status: 'completed',
+    attempts: 1,
+    attempt_history: [],
+    error_code: null,
+  };
+  let submitted = false;
+  await page.route('**/api/v1/operations', (route) =>
+    route.fulfill({
+      json: {
+        mode: 'demo',
+        jobs: submitted ? [retried, failed] : [failed],
+        events: [],
+        traces: [],
+        alerts: [],
+        telemetry: 'Controlled browser fixture',
+        worker_enabled: true,
+      },
+    }),
+  );
+  await page.route(`**/api/v1/jobs/${failed.id}/retry`, (route) => {
+    expect(route.request().postDataJSON()).toEqual({ idempotency_key: expect.any(String) });
+    submitted = true;
+    return route.fulfill({ status: 202, json: retried });
+  });
+  await page.route(`**/api/v1/jobs/${retried.id}`, (route) => route.fulfill({ json: retried }));
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Operations', exact: true }).click();
+  await page.getByText(`Attempts for ${failed.id.slice(0, 12)} (3 / 3)`, { exact: true }).click();
+  await expect(page.getByText('Attempt 3: failed', { exact: true })).toBeVisible();
+  await page
+    .getByRole('button', { name: `Retry job ${failed.id.slice(0, 12)}`, exact: true })
+    .click();
+  await expect(
+    page.getByText('Retry completed. Original inputs were preserved.', { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText('Retry of', { exact: false })).toBeVisible();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+
 test('edits, exports, deletes and restores a collection with its history', async ({ page }) => {
   await page.goto('/');
   const name = `Revision journey ${Date.now()}`;

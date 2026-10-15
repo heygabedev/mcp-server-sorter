@@ -7,6 +7,7 @@ from contextlib import closing
 from datetime import UTC, datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from time import time
 from typing import Literal
 from uuid import uuid4
 
@@ -21,8 +22,8 @@ from mcp_sorter.selections import Selection
 from mcp_sorter.settings import Settings
 from mcp_sorter.versioning import active_versions
 
-CURRENT_REVISION = "0006"
-READABLE_REVISIONS = {"0001", "0002", "0003", "0004", "0005", CURRENT_REVISION}
+CURRENT_REVISION = "0007"
+READABLE_REVISIONS = {"0001", "0002", "0003", "0004", "0005", "0006", CURRENT_REVISION}
 SAFE_FILE = re.compile(
     r"state\.sqlite|catalogs/[a-f0-9]{64}\.sqlite|"
     r"configurations/[a-f0-9]{64}\.json|reports/[a-f0-9]{32}\.json|datasets/[a-f0-9]{64}\.json"
@@ -146,7 +147,7 @@ def validate_backup(directory: Path) -> BackupManifest:
                 and f"{folder}/{identifier}.{extension}" not in manifest.files
             ):
                 raise ValueError("Backup is missing an active artifact")
-        if manifest.state_revision in {"0004", "0005", "0006"}:
+        if manifest.state_revision in {"0004", "0005", "0006", "0007"}:
             for (raw,) in db.execute("SELECT payload FROM jobs"):
                 dataset = json.loads(raw).get("dataset_sha256")
                 if dataset:
@@ -159,7 +160,7 @@ def validate_backup(directory: Path) -> BackupManifest:
                 report_id = json.loads(raw).get("report_id")
                 if report_id and f"reports/{report_id}.json" not in manifest.files:
                     raise ValueError("Backup is missing a completed evaluation report")
-        if manifest.state_revision == "0006":
+        if manifest.state_revision in {"0006", "0007"}:
             if db.execute("PRAGMA foreign_key_check").fetchone() is not None:
                 raise ValueError("Collection history contains an orphaned revision")
             for identifier, payload, revision, deleted in db.execute(
@@ -265,7 +266,18 @@ def restore(runtime: Runtime, source: Path, destination: Path) -> dict[str, str]
                         )
                     db.execute(
                         text(
-                            "UPDATE jobs SET status='queued',owner=NULL,lease_until=NULL "
+                            "UPDATE job_attempts SET outcome='interrupted',"
+                            "error_code='worker-interrupted',finished_at=:now "
+                            "WHERE outcome='running' AND job_id IN "
+                            "(SELECT id FROM jobs WHERE status='running')"
+                        ),
+                        {"now": time()},
+                    )
+                    db.execute(
+                        text(
+                            "UPDATE jobs SET status=CASE WHEN attempts>=3 "
+                            "THEN 'failed' ELSE 'queued' END,"
+                            "owner=NULL,lease_until=NULL,error_code='worker-interrupted' "
                             "WHERE status='running'"
                         )
                     )

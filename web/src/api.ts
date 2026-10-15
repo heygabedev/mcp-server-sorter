@@ -11,14 +11,7 @@ export type Report = components['schemas']['EvaluationReport'];
 export type WorkspaceInfo = components['schemas']['WorkspaceInfo'];
 export type Profile = NonNullable<components['schemas']['RankRequest']['profile']>;
 
-export interface Job {
-  id: string;
-  status: 'queued' | 'running' | 'completed' | 'failed';
-  attempts: number;
-  payload: string;
-  result: string | null;
-  error_code: string | null;
-}
+export type Job = components['schemas']['JobView'];
 
 export async function waitForJob(job: Job): Promise<Job> {
   const deadline = Date.now() + 60_000;

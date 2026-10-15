@@ -934,9 +934,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Submit Api V1 Jobs Post"
+                  "$ref": "#/components/schemas/JobView"
                 }
               }
             }
@@ -1045,9 +1043,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Job Api V1 Jobs  Identifier  Get"
+                  "$ref": "#/components/schemas/JobView"
                 }
               }
             }
@@ -1231,6 +1227,125 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/v1/jobs/{identifier}/retry": {
+      "post": {
+        "summary": "Retry",
+        "operationId": "retry_api_v1_jobs__identifier__retry_post",
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Identifier"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobView"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
           }
         }
       }
@@ -4548,6 +4663,73 @@
         "type": "object",
         "title": "Filters"
       },
+      "JobAttempt": {
+        "properties": {
+          "attempt": {
+            "type": "integer",
+            "maximum": 3.0,
+            "minimum": 1.0,
+            "title": "Attempt"
+          },
+          "started_at": {
+            "type": "number",
+            "title": "Started At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": ["running", "completed", "failed", "lease-expired", "interrupted"],
+            "title": "Outcome"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "execution-failed",
+                  "timeout",
+                  "rate-limited",
+                  "provider-unavailable",
+                  "invalid-data",
+                  "state-store-unavailable",
+                  "lease-expired",
+                  "worker-interrupted",
+                  "retry-budget-exhausted",
+                  "artifact-unavailable"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "trace_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trace Id"
+          }
+        },
+        "type": "object",
+        "required": ["attempt", "started_at", "finished_at", "outcome", "error_code"],
+        "title": "JobAttempt"
+      },
       "JobRequest": {
         "properties": {
           "kind": {
@@ -4587,6 +4769,154 @@
         "type": "object",
         "required": ["kind", "idempotency_key"],
         "title": "JobRequest"
+      },
+      "JobView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "idempotency_key": {
+            "type": "string",
+            "title": "Idempotency Key"
+          },
+          "payload": {
+            "type": "string",
+            "title": "Payload"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["queued", "running", "completed", "failed"],
+            "title": "Status"
+          },
+          "attempts": {
+            "type": "integer",
+            "title": "Attempts"
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner"
+          },
+          "lease_until": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lease Until"
+          },
+          "available_at": {
+            "type": "number",
+            "title": "Available At"
+          },
+          "created_at": {
+            "type": "number",
+            "title": "Created At"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "execution-failed",
+                  "timeout",
+                  "rate-limited",
+                  "provider-unavailable",
+                  "invalid-data",
+                  "state-store-unavailable",
+                  "lease-expired",
+                  "worker-interrupted",
+                  "retry-budget-exhausted",
+                  "artifact-unavailable"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "parent_job_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Job Id"
+          },
+          "request_trace_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Trace Id"
+          },
+          "request_span_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Span Id"
+          },
+          "attempt_history": {
+            "items": {
+              "$ref": "#/components/schemas/JobAttempt"
+            },
+            "type": "array",
+            "title": "Attempt History"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "idempotency_key",
+          "payload",
+          "status",
+          "attempts",
+          "owner",
+          "lease_until",
+          "available_at",
+          "created_at",
+          "result",
+          "error_code",
+          "parent_job_id",
+          "request_trace_id",
+          "request_span_id",
+          "attempt_history"
+        ],
+        "title": "JobView"
       },
       "RankRequest": {
         "properties": {
@@ -4828,6 +5158,21 @@
           "stable_id"
         ],
         "title": "RetrievalExplanation"
+      },
+      "RetryRequest": {
+        "properties": {
+          "idempotency_key": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[a-zA-Z0-9_-]+$",
+            "title": "Idempotency Key"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["idempotency_key"],
+        "title": "RetryRequest"
       },
       "RevisionRequest": {
         "properties": {

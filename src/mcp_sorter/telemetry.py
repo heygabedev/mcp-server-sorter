@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from collections import deque
 from collections.abc import Sequence
 from threading import Lock
@@ -10,10 +11,49 @@ from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import InMemoryMetricReader
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor, SpanExporter, SpanExportResult
+from opentelemetry.trace import Link, SpanContext, TraceFlags, get_current_span
 from prometheus_client import CollectorRegistry, Counter, Gauge, Histogram
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
+
+SAFE_ATTRIBUTES = frozenset(
+    {
+        "http.request.method",
+        "http.route",
+        "http.response.status_code",
+        "request.id",
+        "job.id",
+        "job.kind",
+        "job.attempt",
+        "job.outcome",
+        "job.error_code",
+    }
+)
+
+
+def request_trace() -> tuple[str | None, str | None]:
+    context = get_current_span().get_span_context()
+    if not context.is_valid:
+        return None, None
+    return format(context.trace_id, "032x"), format(context.span_id, "016x")
+
+
+def job_links(trace_id: str | None, span_id: str | None) -> list[Link]:
+    if (
+        not trace_id
+        or not span_id
+        or not re.fullmatch(r"[a-f0-9]{32}", trace_id)
+        or not re.fullmatch(r"[a-f0-9]{16}", span_id)
+    ):
+        return []
+    context = SpanContext(
+        trace_id=int(trace_id, 16),
+        span_id=int(span_id, 16),
+        is_remote=True,
+        trace_flags=TraceFlags(TraceFlags.SAMPLED),
+    )
+    return [Link(context)] if context.is_valid else []
 
 
 class LocalSpans(SpanExporter):
@@ -27,8 +67,21 @@ class LocalSpans(SpanExporter):
                 self.items.append(
                     {
                         "trace_id": format(span.context.trace_id, "032x") if span.context else "",
+                        "span_id": format(span.context.span_id, "016x") if span.context else "",
                         "name": span.name,
                         "status": (span.attributes or {}).get("http.response.status_code", 0),
+                        "attributes": {
+                            key: value
+                            for key, value in (span.attributes or {}).items()
+                            if key in SAFE_ATTRIBUTES
+                        },
+                        "links": [
+                            {
+                                "trace_id": format(link.context.trace_id, "032x"),
+                                "span_id": format(link.context.span_id, "016x"),
+                            }
+                            for link in span.links
+                        ],
                     }
                 )
         return SpanExportResult.SUCCESS
@@ -42,7 +95,10 @@ class Telemetry:
     def __init__(self) -> None:
         self.registry = CollectorRegistry()
         self.requests = Counter(
-            "sorter_requests", "HTTP requests", ["status"], registry=self.registry
+            "sorter_requests",
+            "HTTP requests",
+            ["status", "method", "route"],
+            registry=self.registry,
         )
         self.duration = Histogram(
             "sorter_request_seconds", "HTTP request duration", registry=self.registry
@@ -53,6 +109,12 @@ class Telemetry:
         self.fallbacks = Gauge(
             "sorter_recent_fallbacks",
             "Fallback events in the retained local event window",
+            registry=self.registry,
+        )
+        self.job_duration = Histogram(
+            "sorter_job_seconds",
+            "Job attempt duration",
+            ["kind", "outcome"],
             registry=self.registry,
         )
         self.provider = TracerProvider()
@@ -87,16 +149,29 @@ class RequestTelemetry(BaseHTTPMiddleware):
         telemetry: Telemetry = request.app.state.telemetry
         started = perf_counter()
         request_id = uuid4().hex
-        with telemetry.tracer.start_as_current_span("http.request", record_exception=False) as span:
+        method = (
+            request.method
+            if request.method
+            in {"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "CONNECT", "TRACE"}
+            else "_OTHER"
+        )
+        with telemetry.tracer.start_as_current_span(
+            "http.request",
+            record_exception=False,
+            set_status_on_exception=False,
+            attributes={"http.request.method": method, "request.id": request_id},
+        ) as span:
             status = 500
             try:
                 response = await call_next(request)
                 status = response.status_code
             finally:
                 span.set_attribute("http.response.status_code", status)
-                telemetry.requests.labels(status=str(status)).inc()
+                route = getattr(request.scope.get("route"), "path_format", "unmatched")
+                span.set_attribute("http.route", route)
+                telemetry.requests.labels(status=str(status), method=method, route=route).inc()
                 telemetry.duration.observe(perf_counter() - started)
-                telemetry.otel_requests.add(1, {"status": status})
+                telemetry.otel_requests.add(1, {"status": status, "method": method, "route": route})
                 telemetry.otel_duration.record(perf_counter() - started)
                 logging.getLogger("mcp_sorter.requests").info(
                     json.dumps(
@@ -104,6 +179,8 @@ class RequestTelemetry(BaseHTTPMiddleware):
                             "request_id": request_id,
                             "trace_id": format(span.get_span_context().trace_id, "032x"),
                             "status": status,
+                            "method": method,
+                            "route": route,
                         }
                     )
                 )

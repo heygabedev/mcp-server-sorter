@@ -1,13 +1,14 @@
 import json
 import logging
+from contextlib import nullcontext
 from datetime import UTC, datetime
 from threading import Event, Thread
-from time import time
+from time import perf_counter, time
 from typing import Any, Literal
 from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import Engine, text
+from sqlalchemy import Connection, Engine, bindparam, text
 from sqlalchemy.exc import SQLAlchemyError
 
 from mcp_sorter.evaluation import (
@@ -22,10 +23,14 @@ from mcp_sorter.evaluation import (
 )
 from mcp_sorter.events import record_event
 from mcp_sorter.gateways import rank_with_profile
+from mcp_sorter.job_diagnostics import FAILURE_CODES, FailureCode, failure_code
 from mcp_sorter.runtime import Runtime
 from mcp_sorter.sources import fetch_registry
 from mcp_sorter.storage import canonical
+from mcp_sorter.telemetry import Telemetry, job_links, request_trace
 from mcp_sorter.versioning import active_versions
+
+HEARTBEAT_SECONDS = 5
 
 
 class JobRequest(BaseModel):
@@ -45,6 +50,7 @@ class JobRequest(BaseModel):
 
 
 def enqueue(runtime: Runtime, request: JobRequest) -> dict[str, Any]:
+    trace_id, span_id = request_trace()
     payload = request.model_dump(exclude={"idempotency_key"})
     payload["snapshot"], payload["configuration"] = active_versions(runtime.engine)
     if request.kind == "evaluation":
@@ -62,23 +68,27 @@ def enqueue(runtime: Runtime, request: JobRequest) -> dict[str, Any]:
         if old:
             original = json.loads(old["payload"])
             if (
-                any(original[k] != payload[k] for k in ("kind", "profile"))
+                old["parent_job_id"] is not None
+                or any(original[k] != payload[k] for k in ("kind", "profile"))
                 or original.get("dataset", "regression") != request.dataset
             ):
                 raise ValueError("Idempotency key already belongs to a different request")
-            return dict(old)
+            return with_attempts(db, [dict(old)])[0]
         identifier = uuid4().hex
         now = time()
         db.execute(
             text(
                 "INSERT INTO jobs (id,idempotency_key,payload,status,attempts,"
-                "available_at,created_at) VALUES (:id,:key,:payload,'queued',0,:now,:now)"
+                "available_at,created_at,request_trace_id,request_span_id) "
+                "VALUES (:id,:key,:payload,'queued',0,:now,:now,:trace,:span)"
             ),
             {
                 "id": identifier,
                 "key": request.idempotency_key,
                 "payload": canonical(payload),
                 "now": now,
+                "trace": trace_id,
+                "span": span_id,
             },
         )
     return get_job(runtime.engine, identifier)
@@ -86,6 +96,7 @@ def enqueue(runtime: Runtime, request: JobRequest) -> dict[str, Any]:
 
 def get_job(engine: Engine, identifier: str) -> dict[str, Any]:
     with engine.connect() as db:
+        db.exec_driver_sql("BEGIN")
         row = (
             db.execute(text("SELECT * FROM jobs WHERE id=:id"), {"id": identifier})
             .mappings()
@@ -93,17 +104,37 @@ def get_job(engine: Engine, identifier: str) -> dict[str, Any]:
         )
         if row is None:
             raise ValueError("Job not found")
-        return dict(row)
+        return with_attempts(db, [dict(row)])[0]
+
+
+def with_attempts(db: Connection, jobs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    indexed = {job["id"]: {**job, "attempt_history": []} for job in jobs}
+    if indexed:
+        for attempt in db.execute(
+            text(
+                "SELECT job_id,attempt,started_at,finished_at,outcome,error_code,trace_id "
+                "FROM job_attempts WHERE job_id IN :ids ORDER BY attempt"
+            ).bindparams(bindparam("ids", expanding=True)),
+            {"ids": list(indexed)},
+        ).mappings():
+            indexed[attempt["job_id"]]["attempt_history"].append(
+                {k: v for k, v in attempt.items() if k != "job_id"}
+            )
+    return list(indexed.values())
 
 
 def list_jobs(engine: Engine) -> list[dict[str, Any]]:
     with engine.connect() as db:
-        return [
-            dict(r)
-            for r in db.execute(
-                text("SELECT * FROM jobs ORDER BY created_at DESC LIMIT 100")
-            ).mappings()
-        ]
+        db.exec_driver_sql("BEGIN")
+        return with_attempts(
+            db,
+            [
+                dict(r)
+                for r in db.execute(
+                    text("SELECT * FROM jobs ORDER BY created_at DESC LIMIT 100")
+                ).mappings()
+            ],
+        )
 
 
 def claim(engine: Engine, now: float | None = None) -> dict[str, Any] | None:
@@ -112,10 +143,27 @@ def claim(engine: Engine, now: float | None = None) -> dict[str, Any] | None:
         db.exec_driver_sql("BEGIN IMMEDIATE")
         db.execute(
             text(
-                "UPDATE jobs SET status=CASE WHEN attempts>=3 THEN 'failed' ELSE 'queued' END,"
-                "owner=NULL,error_code='lease-expired' WHERE status='running' AND lease_until<=:now"
+                "UPDATE job_attempts SET outcome='lease-expired',"
+                "error_code='lease-expired',finished_at=:now WHERE outcome='running' "
+                "AND EXISTS (SELECT 1 FROM jobs WHERE jobs.id=job_attempts.job_id "
+                "AND jobs.owner=job_attempts.owner AND jobs.status='running' "
+                "AND jobs.lease_until<=:now)"
             ),
             {"now": now},
+        )
+        db.execute(
+            text(
+                "UPDATE jobs SET status=CASE WHEN attempts>=3 THEN 'failed' ELSE 'queued' END,"
+                "owner=NULL,lease_until=NULL,error_code='lease-expired' "
+                "WHERE status='running' AND lease_until<=:now"
+            ),
+            {"now": now},
+        )
+        db.execute(
+            text(
+                "UPDATE jobs SET status='failed',error_code='retry-budget-exhausted' "
+                "WHERE status='queued' AND attempts>=3"
+            )
         )
         row = (
             db.execute(
@@ -137,6 +185,13 @@ def claim(engine: Engine, now: float | None = None) -> dict[str, Any] | None:
                 "lease_until=:lease WHERE id=:id"
             ),
             {"owner": owner, "lease": now + 30, "id": row["id"]},
+        )
+        db.execute(
+            text(
+                "INSERT INTO job_attempts(job_id,attempt,owner,started_at,outcome) "
+                "VALUES (:id,:attempt,:owner,:now,'running')"
+            ),
+            {"id": row["id"], "attempt": row["attempts"] + 1, "owner": owner, "now": now},
         )
         return {
             **row,
@@ -167,6 +222,7 @@ def finish(
     result: dict[str, Any],
     failed: bool = False,
     now: float | None = None,
+    error_code: FailureCode = "execution-failed",
 ) -> bool:
     now = time() if now is None else now
     snapshot = result.get("snapshot") if not failed else None
@@ -183,14 +239,33 @@ def finish(
             ),
             {
                 "status": status,
-                "result": canonical(result),
-                "error": "execution-failed" if failed else None,
+                "result": None if failed else canonical(result),
+                "error": (error_code if error_code in FAILURE_CODES else "execution-failed")
+                if failed
+                else None,
                 "available": now + 2 ** job["attempts"],
                 "id": job["id"],
                 "owner": job["owner"],
                 "now": now,
             },
         ).rowcount
+        if changed:
+            db.execute(
+                text(
+                    "UPDATE job_attempts SET finished_at=:now,outcome=:outcome,error_code=:error "
+                    "WHERE job_id=:id AND owner=:owner AND attempt=:attempt"
+                ),
+                {
+                    "id": job["id"],
+                    "owner": job["owner"],
+                    "attempt": job["attempts"],
+                    "now": now,
+                    "outcome": "failed" if failed else "completed",
+                    "error": (error_code if error_code in FAILURE_CODES else "execution-failed")
+                    if failed
+                    else None,
+                },
+            )
         if changed and snapshot:
             expected = json.loads(job["payload"])["snapshot"]
             # A concurrent operator activation wins over an old refresh.
@@ -253,27 +328,82 @@ def execute(runtime: Runtime, job: dict[str, Any]) -> dict[str, Any]:
     return {"snapshot": runtime.catalog.publish(records, as_of)}
 
 
-def run_once(runtime: Runtime) -> bool:
+def run_once(runtime: Runtime, telemetry: Telemetry | None = None) -> bool:
     job = claim(runtime.engine)
     if job is None:
         return False
     stopped = Event()
 
     def heartbeat() -> None:
-        while not stopped.wait(5):
-            if not renew(runtime.engine, job):
+        while not stopped.wait(HEARTBEAT_SECONDS):
+            try:
+                renewed = renew(runtime.engine, job)
+            except SQLAlchemyError:
+                logging.getLogger("mcp_sorter.worker").warning(
+                    '{"event":"state-store-unavailable"}'
+                )
+                return
+            if not renewed:
                 return
 
     thread = Thread(target=heartbeat, daemon=True)
     thread.start()
     try:
-        try:
-            result = execute(runtime, job)
-        except Exception:
-            # Persist bounded codes, never exception text from untrusted providers.
-            finish(runtime, job, {}, failed=True)
-        else:
-            finish(runtime, job, result)
+        scope = (
+            telemetry.tracer.start_as_current_span(
+                "job.execute",
+                links=job_links(job.get("request_trace_id"), job.get("request_span_id")),
+                record_exception=False,
+                set_status_on_exception=False,
+            )
+            if telemetry
+            else nullcontext(None)
+        )
+        with scope as span:
+            started = perf_counter()
+            outcome = "interrupted"
+            try:
+                payload = json.loads(job["payload"])
+                kind = payload.get("kind") if isinstance(payload, dict) else None
+            except ValueError:
+                kind = None
+            kind = kind if kind in {"evaluation", "catalog-refresh"} else "unknown"
+            code = None
+            try:
+                if span:
+                    span.set_attributes(
+                        {"job.id": job["id"], "job.kind": kind, "job.attempt": job["attempts"]}
+                    )
+                    with runtime.engine.begin() as db:
+                        db.execute(
+                            text(
+                                "UPDATE job_attempts SET trace_id=:trace "
+                                "WHERE job_id=:id AND owner=:owner AND outcome='running'"
+                            ),
+                            {
+                                "trace": format(span.get_span_context().trace_id, "032x"),
+                                "id": job["id"],
+                                "owner": job["owner"],
+                            },
+                        )
+                try:
+                    result = execute(runtime, job)
+                except Exception as exc:
+                    code = failure_code(exc)
+                    committed = finish(runtime, job, {}, failed=True, error_code=code)
+                    outcome = "failed" if committed else "lease-lost"
+                else:
+                    committed = finish(runtime, job, result)
+                    outcome = "completed" if committed else "lease-lost"
+            finally:
+                if span:
+                    span.set_attribute("job.outcome", outcome)
+                    if code:
+                        span.set_attribute("job.error_code", code)
+                if telemetry:
+                    telemetry.job_duration.labels(kind=kind, outcome=outcome).observe(
+                        perf_counter() - started
+                    )
     finally:
         stopped.set()
         thread.join()
@@ -281,8 +411,9 @@ def run_once(runtime: Runtime) -> bool:
 
 
 class Worker:
-    def __init__(self, runtime: Runtime) -> None:
+    def __init__(self, runtime: Runtime, telemetry: Telemetry | None = None) -> None:
         self.runtime = runtime
+        self.telemetry = telemetry
         self.stopped = Event()
         self.thread = Thread(target=self.run, daemon=True)
 
@@ -292,7 +423,7 @@ class Worker:
     def run(self) -> None:
         while not self.stopped.is_set():
             try:
-                run_once(self.runtime)
+                run_once(self.runtime, self.telemetry)
             except SQLAlchemyError:
                 logging.getLogger("mcp_sorter.worker").warning(
                     '{"event":"state-store-unavailable"}'

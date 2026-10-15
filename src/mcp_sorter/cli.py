@@ -162,10 +162,29 @@ def submit_job(
 def work_once() -> None:
     """Process one available job; expired leases are recovered before claiming work."""
     from mcp_sorter.jobs import run_once
+    from mcp_sorter.telemetry import Telemetry
+
+    runtime = Runtime(Settings())
+    telemetry = Telemetry()
+    try:
+        typer.echo(json.dumps({"processed": run_once(runtime, telemetry)}))
+    finally:
+        telemetry.close()
+        runtime.close()
+
+
+@jobs_app.command("retry")
+def retry_failed_job(identifier: str, key: str) -> None:
+    """Create a linked retry of a failed job, preserving its original input pins."""
+    from mcp_sorter.job_retry import RetryRequest, retry_job
 
     runtime = Runtime(Settings())
     try:
-        typer.echo(json.dumps({"processed": run_once(runtime)}))
+        typer.echo(
+            json.dumps(retry_job(runtime, identifier, RetryRequest(idempotency_key=key)), indent=2)
+        )
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
     finally:
         runtime.close()
 

@@ -73,7 +73,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         with service_lock(config.data_dir):
             app.state.runtime = Runtime(config, service_locked=True)
             app.state.telemetry = Telemetry()
-            worker = Worker(app.state.runtime)
+            worker = Worker(app.state.runtime, app.state.telemetry)
             if config.worker_enabled:
                 worker.start()
             try:

@@ -1,8 +1,9 @@
 import json
 import logging
+from contextlib import nullcontext
 from datetime import UTC, datetime
 from threading import Event, Thread
-from time import time
+from time import perf_counter, time
 from typing import Any, Literal
 from uuid import uuid4
 
@@ -26,6 +27,7 @@ from mcp_sorter.job_diagnostics import FAILURE_CODES, FailureCode, failure_code
 from mcp_sorter.runtime import Runtime
 from mcp_sorter.sources import fetch_registry
 from mcp_sorter.storage import canonical
+from mcp_sorter.telemetry import Telemetry, job_links, request_trace
 from mcp_sorter.versioning import active_versions
 
 HEARTBEAT_SECONDS = 5
@@ -48,6 +50,7 @@ class JobRequest(BaseModel):
 
 
 def enqueue(runtime: Runtime, request: JobRequest) -> dict[str, Any]:
+    trace_id, span_id = request_trace()
     payload = request.model_dump(exclude={"idempotency_key"})
     payload["snapshot"], payload["configuration"] = active_versions(runtime.engine)
     if request.kind == "evaluation":
@@ -76,13 +79,16 @@ def enqueue(runtime: Runtime, request: JobRequest) -> dict[str, Any]:
         db.execute(
             text(
                 "INSERT INTO jobs (id,idempotency_key,payload,status,attempts,"
-                "available_at,created_at) VALUES (:id,:key,:payload,'queued',0,:now,:now)"
+                "available_at,created_at,request_trace_id,request_span_id) "
+                "VALUES (:id,:key,:payload,'queued',0,:now,:now,:trace,:span)"
             ),
             {
                 "id": identifier,
                 "key": request.idempotency_key,
                 "payload": canonical(payload),
                 "now": now,
+                "trace": trace_id,
+                "span": span_id,
             },
         )
     return get_job(runtime.engine, identifier)
@@ -322,7 +328,7 @@ def execute(runtime: Runtime, job: dict[str, Any]) -> dict[str, Any]:
     return {"snapshot": runtime.catalog.publish(records, as_of)}
 
 
-def run_once(runtime: Runtime) -> bool:
+def run_once(runtime: Runtime, telemetry: Telemetry | None = None) -> bool:
     job = claim(runtime.engine)
     if job is None:
         return False
@@ -343,13 +349,61 @@ def run_once(runtime: Runtime) -> bool:
     thread = Thread(target=heartbeat, daemon=True)
     thread.start()
     try:
-        try:
-            result = execute(runtime, job)
-        except Exception as exc:
-            # Persist bounded codes, never exception text from untrusted providers.
-            finish(runtime, job, {}, failed=True, error_code=failure_code(exc))
-        else:
-            finish(runtime, job, result)
+        scope = (
+            telemetry.tracer.start_as_current_span(
+                "job.execute",
+                links=job_links(job.get("request_trace_id"), job.get("request_span_id")),
+                record_exception=False,
+                set_status_on_exception=False,
+            )
+            if telemetry
+            else nullcontext(None)
+        )
+        with scope as span:
+            started = perf_counter()
+            outcome = "interrupted"
+            try:
+                payload = json.loads(job["payload"])
+                kind = payload.get("kind") if isinstance(payload, dict) else None
+            except ValueError:
+                kind = None
+            kind = kind if kind in {"evaluation", "catalog-refresh"} else "unknown"
+            code = None
+            try:
+                if span:
+                    span.set_attributes(
+                        {"job.id": job["id"], "job.kind": kind, "job.attempt": job["attempts"]}
+                    )
+                    with runtime.engine.begin() as db:
+                        db.execute(
+                            text(
+                                "UPDATE job_attempts SET trace_id=:trace "
+                                "WHERE job_id=:id AND owner=:owner AND outcome='running'"
+                            ),
+                            {
+                                "trace": format(span.get_span_context().trace_id, "032x"),
+                                "id": job["id"],
+                                "owner": job["owner"],
+                            },
+                        )
+                try:
+                    result = execute(runtime, job)
+                except Exception as exc:
+                    code = failure_code(exc)
+                    committed = finish(runtime, job, {}, failed=True, error_code=code)
+                    outcome = "failed" if committed else "lease-lost"
+                else:
+                    committed = finish(runtime, job, result)
+                    outcome = "completed" if committed else "lease-lost"
+            finally:
+                if span:
+                    span.set_attribute("job.outcome", outcome)
+                    if code:
+                        span.set_attribute("job.error_code", code)
+                if telemetry:
+                    telemetry.job_duration.labels(kind=kind, outcome=outcome).observe(
+                        perf_counter() - started
+                    )
     finally:
         stopped.set()
         thread.join()
@@ -357,8 +411,9 @@ def run_once(runtime: Runtime) -> bool:
 
 
 class Worker:
-    def __init__(self, runtime: Runtime) -> None:
+    def __init__(self, runtime: Runtime, telemetry: Telemetry | None = None) -> None:
         self.runtime = runtime
+        self.telemetry = telemetry
         self.stopped = Event()
         self.thread = Thread(target=self.run, daemon=True)
 
@@ -368,7 +423,7 @@ class Worker:
     def run(self) -> None:
         while not self.stopped.is_set():
             try:
-                run_once(self.runtime)
+                run_once(self.runtime, self.telemetry)
             except SQLAlchemyError:
                 logging.getLogger("mcp_sorter.worker").warning(
                     '{"event":"state-store-unavailable"}'

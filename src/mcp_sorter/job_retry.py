@@ -7,6 +7,7 @@ from sqlalchemy import text
 
 from mcp_sorter.jobs import get_job, with_attempts
 from mcp_sorter.runtime import Runtime
+from mcp_sorter.telemetry import request_trace
 
 
 class RetryRequest(BaseModel):
@@ -15,6 +16,7 @@ class RetryRequest(BaseModel):
 
 
 def retry_job(runtime: Runtime, identifier: str, request: RetryRequest) -> dict[str, object]:
+    trace_id, span_id = request_trace()
     with runtime.engine.begin() as db:
         db.exec_driver_sql("BEGIN IMMEDIATE")
         original = (
@@ -49,8 +51,8 @@ def retry_job(runtime: Runtime, identifier: str, request: RetryRequest) -> dict[
         db.execute(
             text(
                 "INSERT INTO jobs(id,idempotency_key,payload,status,attempts,"
-                "available_at,created_at,parent_job_id) "
-                "VALUES (:id,:key,:payload,'queued',0,:now,:now,:parent)"
+                "available_at,created_at,parent_job_id,request_trace_id,request_span_id) "
+                "VALUES (:id,:key,:payload,'queued',0,:now,:now,:parent,:trace,:span)"
             ),
             {
                 "id": new_id,
@@ -58,6 +60,8 @@ def retry_job(runtime: Runtime, identifier: str, request: RetryRequest) -> dict[
                 "payload": original["payload"],
                 "now": now,
                 "parent": identifier,
+                "trace": trace_id,
+                "span": span_id,
             },
         )
     return get_job(runtime.engine, new_id)

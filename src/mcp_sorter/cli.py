@@ -162,11 +162,14 @@ def submit_job(
 def work_once() -> None:
     """Process one available job; expired leases are recovered before claiming work."""
     from mcp_sorter.jobs import run_once
+    from mcp_sorter.telemetry import Telemetry
 
     runtime = Runtime(Settings())
+    telemetry = Telemetry()
     try:
-        typer.echo(json.dumps({"processed": run_once(runtime)}))
+        typer.echo(json.dumps({"processed": run_once(runtime, telemetry)}))
     finally:
+        telemetry.close()
         runtime.close()
 
 

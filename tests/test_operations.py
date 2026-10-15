@@ -126,7 +126,7 @@ def test_worker_survives_database_contention(runtime, monkeypatch):
 
     worker = Worker(runtime)
 
-    def fail_once(_):
+    def fail_once(*args):
         worker.stopped.set()
         raise OperationalError("", {}, None)
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, waitForJob } from '../api';
 import type { Job } from '../api';
 import PageTitle from './PageTitle';
@@ -8,7 +8,19 @@ interface Operations {
   jobs: Job[];
   events: { id: number; at: number; kind: string; code: string }[];
   alerts: string[];
-  traces: { trace_id: string; name: string; status: number }[];
+  traces: {
+    trace_id: string;
+    span_id?: string;
+    name: string;
+    status: number;
+    attributes?: {
+      'http.request.method'?: string;
+      'http.route'?: string;
+      'job.outcome'?: string;
+      'job.id'?: string;
+    };
+    links?: { trace_id: string; span_id: string }[];
+  }[];
   telemetry: string;
   worker_enabled: boolean;
 }
@@ -21,11 +33,17 @@ export default function OperationsView({
   const [status, setStatus] = useState<Operations | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState('');
+  const retryKeys = useRef(new Map<string, string>());
+  const requestNumber = useRef(0);
   const reload = useCallback(async () => {
+    const sequence = ++requestNumber.current;
     try {
-      setStatus(await api<Operations>('/operations'));
+      const result = await api<Operations>('/operations');
+      if (sequence === requestNumber.current) setStatus(result);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to load operations');
+      if (sequence === requestNumber.current)
+        setError(cause instanceof Error ? cause.message : 'Unable to load operations');
     }
   }, []);
   useEffect(() => {
@@ -51,6 +69,27 @@ export default function OperationsView({
       setBusy(false);
     }
   }
+
+  async function retry(job: Job) {
+    setBusy(true);
+    setError('');
+    setNotice('');
+    const key = retryKeys.current.get(job.id) ?? crypto.randomUUID();
+    retryKeys.current.set(job.id, key);
+    try {
+      const retried = await api<Job>(`/jobs/${job.id}/retry`, { idempotency_key: key });
+      await reload();
+      await waitForJob(retried);
+      await reload();
+      await onCatalogChanged();
+      retryKeys.current.delete(job.id);
+      setNotice('Retry completed. Original inputs were preserved.');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Retry failed');
+    } finally {
+      setBusy(false);
+    }
+  }
   return (
     <>
       <PageTitle
@@ -61,6 +100,11 @@ export default function OperationsView({
       {error && (
         <p role="alert" className="alert error">
           {error}
+        </p>
+      )}
+      {notice && (
+        <p role="status" className="alert">
+          {notice}
         </p>
       )}
       {status && (
@@ -104,7 +148,9 @@ export default function OperationsView({
                       <th>Job</th>
                       <th>Type</th>
                       <th>Status</th>
+                      <th>Failure category</th>
                       <th>Attempts</th>
+                      <th>Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -112,10 +158,64 @@ export default function OperationsView({
                       <tr key={job.id}>
                         <td>
                           <code>{job.id.slice(0, 12)}</code>
+                          {job.parent_job_id && (
+                            <p className="caption">
+                              Retry of <code>{job.parent_job_id.slice(0, 12)}</code>
+                            </p>
+                          )}
                         </td>
-                        <td>{JSON.parse(job.payload).kind}</td>
+                        <td>{jobKind(job.payload)}</td>
                         <td>{job.status}</td>
-                        <td>{job.attempts} / 3</td>
+                        <td>{job.error_code?.replaceAll('-', ' ') ?? '—'}</td>
+                        <td>
+                          <details>
+                            <summary>
+                              Attempts for {job.id.slice(0, 12)} ({job.attempts} / 3)
+                            </summary>
+                            {job.attempts > (job.attempt_history?.length ?? 0) && (
+                              <p>Earlier attempts were not recorded.</p>
+                            )}
+                            <ol className="attempt-history">
+                              {(job.attempt_history ?? []).map((attempt) => (
+                                <li key={attempt.attempt}>
+                                  <strong>
+                                    Attempt {attempt.attempt}:{' '}
+                                    {attempt.outcome.replaceAll('-', ' ')}
+                                  </strong>
+                                  <p>
+                                    Started {new Date(attempt.started_at * 1000).toLocaleString()}
+                                    {attempt.finished_at !== null
+                                      ? ` · finished ${new Date(attempt.finished_at * 1000).toLocaleString()}`
+                                      : ' · in progress'}
+                                  </p>
+                                  {attempt.error_code && (
+                                    <p>{attempt.error_code.replaceAll('-', ' ')}</p>
+                                  )}
+                                  <p>
+                                    Trace: <code>{attempt.trace_id ?? 'Not recorded'}</code>
+                                  </p>
+                                </li>
+                              ))}
+                            </ol>
+                            {job.request_trace_id && (
+                              <p>
+                                Request trace: <code>{job.request_trace_id}</code>
+                              </p>
+                            )}
+                          </details>
+                        </td>
+                        <td>
+                          {job.status === 'failed' && (
+                            <button
+                              className="secondary"
+                              disabled={busy}
+                              aria-label={`Retry job ${job.id.slice(0, 12)}`}
+                              onClick={() => void retry(job)}
+                            >
+                              Retry job
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -157,7 +257,8 @@ export default function OperationsView({
                   <tr>
                     <th>Trace</th>
                     <th>Operation</th>
-                    <th>HTTP status</th>
+                    <th>Outcome</th>
+                    <th>Linked request</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -165,12 +266,24 @@ export default function OperationsView({
                     .slice(-10)
                     .reverse()
                     .map((trace) => (
-                      <tr key={trace.trace_id}>
+                      <tr key={`${trace.trace_id}:${trace.span_id ?? trace.name}`}>
                         <td>
                           <code>{trace.trace_id.slice(0, 16)}</code>
                         </td>
-                        <td>{trace.name}</td>
-                        <td>{trace.status}</td>
+                        <td>
+                          {trace.name}
+                          <p className="caption">
+                            {trace.attributes?.['http.request.method']}{' '}
+                            {trace.attributes?.['http.route'] ??
+                              trace.attributes?.['job.id']?.slice(0, 12)}
+                          </p>
+                        </td>
+                        <td>{trace.attributes?.['job.outcome'] ?? trace.status}</td>
+                        <td>
+                          {trace.links?.map((link) => (
+                            <code key={link.span_id}>{link.trace_id.slice(0, 16)}</code>
+                          )) ?? '—'}
+                        </td>
                       </tr>
                     ))}
                 </tbody>
@@ -181,4 +294,13 @@ export default function OperationsView({
       )}
     </>
   );
+}
+
+function jobKind(payload: string): string {
+  try {
+    const kind = JSON.parse(payload)?.kind;
+    return kind === 'evaluation' || kind === 'catalog-refresh' ? kind : 'Unknown job';
+  } catch {
+    return 'Unknown job';
+  }
 }

@@ -18,6 +18,12 @@ ROOT = Path(__file__).resolve().parents[1]
 MUTATIONS = [
     (
         "ranking",
+        "(score,-evidence_count,-freshness_used,server_id) > (?,?,?,?)",
+        "(score,-evidence_count,-freshness_used,server_id) >= (?,?,?,?)",
+        "Repeat the continuation boundary",
+    ),
+    (
+        "ranking",
         'category", "transport", "auth", "deployment',
         'category", "transport", "deployment',
         "Drop the authentication filter",
@@ -95,6 +101,7 @@ def run_tests(directory, modules):
                 f"tests/test_{'operations' if module == 'jobs' else module}.py"
                 for module in sorted(modules)
             ],
+            *(["tests/test_search.py"] if "ranking" in modules else []),
         ],
         cwd=directory,
         env={**os.environ, "PYTHONPATH": str(directory / "src"), "PYTHONDONTWRITEBYTECODE": "1"},

@@ -2,6 +2,8 @@ import type { components } from './schema';
 
 export type Server = components['schemas']['ServerRecord'];
 export type Ranking = components['schemas']['Ranking'];
+export type CatalogPage = components['schemas']['CatalogPage'];
+export type CatalogSearch = components['schemas']['CatalogSearch'];
 export type Selection = components['schemas']['Selection'];
 export type Report = components['schemas']['EvaluationReport'];
 export type WorkspaceInfo = components['schemas']['WorkspaceInfo'];

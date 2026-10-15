@@ -230,7 +230,6 @@ def demo() -> None:
 
 
 @app.command()
-@app.command("search")
 def rank(query: str, category: str | None = None, profile: Profile = "baseline") -> None:
     """Find matching servers and print evidence-linked rankings as JSON."""
     runtime = Runtime(Settings())
@@ -239,6 +238,36 @@ def rank(query: str, category: str | None = None, profile: Profile = "baseline")
             runtime, RankRequest(query=query, filters=Filters(category=category), profile=profile)
         )
         typer.echo(result.model_dump_json(indent=2))
+    finally:
+        runtime.close()
+
+
+@app.command("search")
+def search(
+    query: str = typer.Argument(""),
+    category: str | None = None,
+    deployment: Literal["local", "remote"] | None = None,
+    limit: int = typer.Option(20, min=1, max=50),
+    cursor: str | None = None,
+    snapshot: str | None = None,
+    configuration: str | None = None,
+) -> None:
+    """Browse deterministic catalog pages; pass next_cursor with the same search options."""
+    from mcp_sorter.search import CatalogSearch, search_catalog
+
+    runtime = Runtime(Settings())
+    try:
+        request = CatalogSearch(
+            query=query,
+            filters=Filters(category=category, deployment=deployment),
+            limit=limit,
+            cursor=cursor,
+            snapshot=snapshot,
+            configuration=configuration,
+        )
+        typer.echo(search_catalog(runtime.catalog, request).model_dump_json(indent=2))
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
     finally:
         runtime.close()
 

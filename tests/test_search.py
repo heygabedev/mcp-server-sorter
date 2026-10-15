@@ -1,11 +1,14 @@
 import base64
 import hashlib
 import hmac
+import json
 
 import pytest
 from fastapi.testclient import TestClient
+from typer.testing import CliRunner
 
 from mcp_sorter.api import create_app
+from mcp_sorter.cli import app
 from mcp_sorter.models import Filters
 from mcp_sorter.ranking import RankRequest, rank
 from mcp_sorter.search import CatalogSearch, cursor_key, decode_cursor, search_catalog
@@ -20,6 +23,7 @@ def test_pages_match_deterministic_retrieval(runtime, query):
         result = search_catalog(
             runtime.catalog, request.model_copy(update={"cursor": result.next_cursor})
         )
+        assert {r.server.id for r in collected}.isdisjoint(r.server.id for r in result.results)
         collected.extend(result.results)
     baseline = rank(runtime.catalog, RankRequest(query=query, limit=50))
     assert collected == baseline.results
@@ -41,6 +45,7 @@ def test_pagination_preserves_all_ties_and_snapshot_across_activation(runtime):
             runtime.catalog, request.model_copy(update={"cursor": page.next_cursor})
         )
         assert page.snapshot == snapshot and page.total == 107
+        assert set(ids).isdisjoint(item.server.id for item in page.results)
         ids.extend(item.server.id for item in page.results)
     assert ids == [f"test/{i:03d}" for i in range(107)]
 
@@ -145,3 +150,22 @@ def test_cursor_preserves_configuration_when_weights_change(runtime):
         assert page.configuration == first.configuration
         collected.extend(page.results)
     assert collected == expected.results
+
+
+def test_cli_pages_match_api_and_reject_changed_cursor_options(tmp_path, monkeypatch):
+    from mcp_sorter.settings import Settings
+
+    monkeypatch.setenv("SORTER_DATA_DIR", str(tmp_path))
+    runner = CliRunner()
+    first = runner.invoke(app, ["search", "--limit", "2"])
+    assert first.exit_code == 0, first.output
+    page = json.loads(first.stdout)
+    result = runner.invoke(app, ["search", "--limit", "2", "--cursor", page["next_cursor"]])
+    assert result.exit_code == 0, result.output
+    with TestClient(create_app(Settings(data_dir=tmp_path, worker_enabled=False))) as client:
+        expected = client.post(
+            "/api/v1/catalog/search", json={"limit": 2, "cursor": page["next_cursor"]}
+        ).json()
+    assert json.loads(result.stdout) == expected
+    assert runner.invoke(app, ["search", "changed", "--cursor", page["next_cursor"]]).exit_code == 2
+    assert runner.invoke(app, ["search", "--limit", "51"]).exit_code == 2

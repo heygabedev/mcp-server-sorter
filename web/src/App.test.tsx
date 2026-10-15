@@ -20,7 +20,7 @@ const workspace: WorkspaceInfo = {
 function mockEndpoints(overrides: Record<string, unknown> = {}) {
   const responses: Record<string, unknown> = {
     '/api/v1/workspace': workspace,
-    '/api/v1/servers': ranking,
+    '/api/v1/catalog/search': { ...ranking, total: 3, next_cursor: null },
     '/api/v1/rankings': ranking,
     '/api/v1/collections': [],
     '/api/v1/evaluations': [],
@@ -150,9 +150,9 @@ test.each([
     const request = vi.mocked(fetch).mock.calls.find(([path]) => path === '/api/v1/rankings');
     expect(JSON.parse(String(request?.[1]?.body))).toEqual({
       query: 'pull requests',
-      filters: { category, deployment },
+      filters: { category, deployment, include_deprecated: false },
       profile,
-      limit: 50,
+      limit: 20,
     });
   },
 );
@@ -168,13 +168,15 @@ test('clearing category and deployment removes both constraints from the next re
   fireEvent.change(screen.getByLabelText('Deployment'), { target: { value: '' } });
   fireEvent.click(screen.getByRole('button', { name: 'Apply filters' }));
   await waitFor(() => {
-    const requests = vi.mocked(fetch).mock.calls.filter(([path]) => path === '/api/v1/rankings');
-    expect(requests).toHaveLength(2);
-    expect(JSON.parse(String(requests[1][1]?.body))).toEqual({
+    const requests = vi
+      .mocked(fetch)
+      .mock.calls.filter(([path]) => path === '/api/v1/catalog/search');
+    expect(requests).toHaveLength(3);
+    expect(JSON.parse(String(requests[2][1]?.body))).toEqual({
       query: '',
-      filters: { category: null, deployment: null },
+      filters: { category: null, deployment: null, include_deprecated: false },
       profile: 'baseline',
-      limit: 50,
+      limit: 20,
     });
   });
 });
@@ -185,8 +187,9 @@ test('a delayed initial catalog cannot replace newer filtered results', async ()
     resolveCatalog = resolve;
   });
   const filtered = { ...ranking, query: 'github', results: ranking.results.slice(0, 1) };
-  vi.mocked(fetch).mockImplementation(async (path) => {
-    if (path === '/api/v1/servers') return initial;
+  vi.mocked(fetch).mockImplementation(async (path, init) => {
+    if (path === '/api/v1/catalog/search' && JSON.parse(String(init?.body)).query === '')
+      return initial;
     return Response.json(path === '/api/v1/workspace' ? workspace : filtered);
   });
   render(<App />);
@@ -201,12 +204,85 @@ test('a delayed initial catalog cannot replace newer filtered results', async ()
 
 test('shows a recoverable service error', async () => {
   mockEndpoints({
-    '/api/v1/servers': Response.json({ detail: 'Catalog unavailable' }, { status: 503 }),
+    '/api/v1/catalog/search': Response.json({ detail: 'Catalog unavailable' }, { status: 503 }),
   });
   render(<App />);
   expect(await screen.findByRole('alert')).toHaveTextContent('Catalog unavailable');
   fireEvent.click(screen.getByRole('button', { name: 'Dismiss error' }));
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+});
+
+test('loads a pinned continuation and keeps earlier selections', async () => {
+  mockEndpoints({ '/api/v1/catalog/search': { ...ranking, total: 4, next_cursor: 'page-two' } });
+  render(<App />);
+  await screen.findByRole('button', { name: 'GitHub' });
+  fireEvent.click(screen.getByLabelText('Select GitHub'));
+  mockEndpoints({
+    '/api/v1/catalog/search': {
+      ...ranking,
+      total: 4,
+      next_cursor: null,
+      results: [{ ...ranking.results[0], server: catalog.records[3] }],
+    },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Load more' }));
+  expect(await screen.findByText('Showing 4 of 4 matching servers.')).toBeInTheDocument();
+  expect(screen.getByLabelText('Select GitHub')).toBeChecked();
+  expect(screen.queryByRole('button', { name: 'Load more' })).not.toBeInTheDocument();
+  const request = vi.mocked(fetch).mock.calls.at(-1)!;
+  expect(JSON.parse(String(request[1]?.body))).toEqual({
+    query: '',
+    filters: { category: null, deployment: null, include_deprecated: false },
+    profile: 'baseline',
+    limit: 20,
+    cursor: 'page-two',
+  });
+});
+
+test('a delayed continuation cannot overwrite a new search', async () => {
+  mockEndpoints({ '/api/v1/catalog/search': { ...ranking, total: 4, next_cursor: 'page-two' } });
+  render(<App />);
+  await screen.findByRole('button', { name: 'GitHub' });
+  let resolvePage!: (response: Response) => void;
+  const pending = new Promise<Response>((resolve) => {
+    resolvePage = resolve;
+  });
+  vi.mocked(fetch).mockImplementation(async (_path, init) => {
+    const body = JSON.parse(String(init?.body));
+    return body.cursor
+      ? pending
+      : Response.json({
+          ...ranking,
+          query: 'github',
+          results: ranking.results.slice(0, 1),
+          total: 1,
+          next_cursor: null,
+        });
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Load more' }));
+  fireEvent.change(screen.getByLabelText('Search servers'), { target: { value: 'github' } });
+  expect(screen.queryByRole('button', { name: 'Load more' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Find servers' }));
+  await screen.findByText('Showing 1 of 1 matching servers.');
+  await act(async () => resolvePage(Response.json({ ...ranking, total: 4, next_cursor: null })));
+  expect(screen.getByText('Showing 1 of 1 matching servers.')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Slack' })).not.toBeInTheDocument();
+});
+
+test('an invalid cursor leaves the current page available for a fresh search', async () => {
+  mockEndpoints({ '/api/v1/catalog/search': { ...ranking, total: 4, next_cursor: 'invalid' } });
+  render(<App />);
+  await screen.findByRole('button', { name: 'GitHub' });
+  mockEndpoints({
+    '/api/v1/catalog/search': Response.json(
+      { detail: 'Invalid continuation cursor' },
+      { status: 422 },
+    ),
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Load more' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Invalid continuation cursor');
+  expect(screen.getByRole('button', { name: 'GitHub' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Find servers' })).toBeEnabled();
 });
 
 test('keeps selected records ready to compare', async () => {
@@ -222,7 +298,7 @@ test('keeps selected records ready to compare', async () => {
 test('renders poisoned metadata as text without creating executable elements', async () => {
   const description = '<img src=x onerror="window.compromised=true">';
   mockEndpoints({
-    '/api/v1/servers': {
+    '/api/v1/catalog/search': {
       ...ranking,
       results: [{ ...ranking.results[0], server: { ...records[0], description } }],
     },
@@ -250,7 +326,7 @@ test('distinguishes live mode from a catalog containing synthetic records', asyn
       mode: 'live',
       catalog: { ...workspace.catalog, simulated: 2 },
     },
-    '/api/v1/servers': {
+    '/api/v1/catalog/search': {
       ...ranking,
       results: [
         {

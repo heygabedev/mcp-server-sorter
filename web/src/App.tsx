@@ -22,10 +22,17 @@ import {
   X,
 } from 'lucide-react';
 import { api, download, waitForJob } from './api';
-import type { Job } from './api';
+import type { Job, CatalogPage, CatalogSearch } from './api';
 import type { Profile, Ranking, Report, Selection, Server, WorkspaceInfo } from './api';
 
 type Tab = 'Discover' | 'Collections' | 'Evaluations' | 'Versions' | 'Operations';
+type SearchResults = Ranking & Partial<Pick<CatalogPage, 'total' | 'next_cursor'>>;
+const initialSearch: CatalogSearch = {
+  query: '',
+  filters: { category: null, deployment: null, include_deprecated: false },
+  profile: 'baseline',
+  limit: 20,
+};
 const categories = [
   'development',
   'knowledge',
@@ -51,9 +58,9 @@ export default function App() {
   const [tab, setTab] = useState<Tab>('Discover');
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('');
-  const [deployment, setDeployment] = useState('');
+  const [deployment, setDeployment] = useState<'' | 'local' | 'remote'>('');
   const [profile, setProfile] = useState<Profile>('baseline');
-  const [ranking, setRanking] = useState<Ranking | null>(null);
+  const [ranking, setRanking] = useState<SearchResults | null>(null);
   const [selected, setSelected] = useState<Server[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -70,6 +77,7 @@ export default function App() {
   const [datasets, setDatasets] = useState<Record<string, WorkspaceInfo['evaluation_dataset']>>({});
   const dialog = useRef<HTMLDialogElement>(null);
   const requestNumber = useRef(0);
+  const submittedSearch = useRef<CatalogSearch>(initialSearch);
   const catalog = workspace?.catalog;
   const detailEvidence = detail
     ? ranking?.results.find((item) => item.server.id === detail.id)?.retrieval
@@ -91,15 +99,51 @@ export default function App() {
     setBusy(true);
     setError('');
     try {
-      const result = await api<Ranking>('/rankings', {
+      const request = {
         query: value,
-        filters: { category: category || null, deployment: deployment || null },
+        filters: {
+          category: category || null,
+          deployment: deployment || null,
+          include_deprecated: false,
+        },
         profile,
-        limit: 50,
-      });
+        limit: 20,
+      };
+      const result = await api<SearchResults>(
+        profile === 'baseline' ? '/catalog/search' : '/rankings',
+        request,
+      );
       if (sequence === requestNumber.current) {
         if (ranking && ranking.snapshot !== result.snapshot) setSelected([]);
+        if (request.profile === 'baseline')
+          submittedSearch.current = { ...request, profile: 'baseline' };
         setRanking(result);
+      }
+    } catch (cause) {
+      if (sequence === requestNumber.current) setError(message(cause));
+    } finally {
+      if (sequence === requestNumber.current) setBusy(false);
+    }
+  }
+
+  function resetContinuation() {
+    ++requestNumber.current;
+    setBusy(false);
+    setRanking((current) => (current ? { ...current, next_cursor: null } : null));
+  }
+
+  async function loadMore() {
+    if (!ranking?.next_cursor || busy) return;
+    const sequence = ++requestNumber.current;
+    setBusy(true);
+    setError('');
+    try {
+      const page = await api<CatalogPage>('/catalog/search', {
+        ...submittedSearch.current,
+        cursor: ranking.next_cursor,
+      });
+      if (sequence === requestNumber.current) {
+        setRanking({ ...page, results: [...ranking.results, ...page.results] });
       }
     } catch (cause) {
       if (sequence === requestNumber.current) setError(message(cause));
@@ -111,7 +155,7 @@ export default function App() {
   useEffect(() => {
     const controller = new AbortController();
     const sequence = ++requestNumber.current;
-    api<Ranking>('/servers', undefined, controller.signal)
+    api<CatalogPage>('/catalog/search', initialSearch, controller.signal)
       .then((result) => {
         if (!controller.signal.aborted && sequence === requestNumber.current) setRanking(result);
       })
@@ -365,7 +409,10 @@ export default function App() {
                 <input
                   id="query"
                   value={query}
-                  onChange={(event) => setQuery(event.target.value)}
+                  onChange={(event) => {
+                    resetContinuation();
+                    setQuery(event.target.value);
+                  }}
                   placeholder="What do you want to connect or build?"
                   maxLength={500}
                 />
@@ -393,7 +440,13 @@ export default function App() {
                 <SlidersHorizontal size={16} />
                 <label>
                   <span className="sr-only">Category</span>
-                  <select value={category} onChange={(event) => setCategory(event.target.value)}>
+                  <select
+                    value={category}
+                    onChange={(event) => {
+                      resetContinuation();
+                      setCategory(event.target.value);
+                    }}
+                  >
                     <option value="">All categories</option>
                     {categories.map((value) => (
                       <option key={value}>{value}</option>
@@ -404,7 +457,10 @@ export default function App() {
                   <span className="sr-only">Deployment</span>
                   <select
                     value={deployment}
-                    onChange={(event) => setDeployment(event.target.value)}
+                    onChange={(event) => {
+                      resetContinuation();
+                      setDeployment(event.target.value as '' | 'local' | 'remote');
+                    }}
                   >
                     <option value="">Any deployment</option>
                     <option value="local">Local</option>
@@ -419,7 +475,10 @@ export default function App() {
                   <select
                     aria-label="Ranking profile"
                     value={profile}
-                    onChange={(event) => setProfile(event.target.value as Profile)}
+                    onChange={(event) => {
+                      resetContinuation();
+                      setProfile(event.target.value as Profile);
+                    }}
                   >
                     {profiles.map((item) => (
                       <option key={item.id} value={item.id}>
@@ -436,6 +495,13 @@ export default function App() {
                 </h2>
                 <span>Evidence-linked · versioned · inspectable</span>
               </div>
+              {ranking && (
+                <p className="catalog-note" aria-live="polite">
+                  {ranking.total !== undefined
+                    ? `Showing ${ranking.results.length} of ${ranking.total} matching servers.`
+                    : 'Model ordering is limited to the top 20 retrieved candidates.'}
+                </p>
+              )}
               {ranking?.fallback_reason && (
                 <div className="alert" role="status">
                   The selected mock profile returned {ranking.fallback_reason}. Results use the
@@ -506,6 +572,11 @@ export default function App() {
                   );
                 })}
               </div>
+              {ranking?.next_cursor && (
+                <button className="secondary" disabled={busy} onClick={() => void loadMore()}>
+                  {busy ? 'Loading…' : 'Load more'}
+                </button>
+              )}
               <div className="catalog-note">
                 <CircleHelp size={15} />
                 <span>

@@ -1,4 +1,6 @@
 import json
+import sqlite3
+from contextlib import closing
 from types import SimpleNamespace
 from zipfile import ZipFile
 
@@ -6,7 +8,7 @@ import pytest
 from typer.testing import CliRunner
 
 from mcp_sorter.cli import app
-from mcp_sorter.recovery import digest
+from mcp_sorter.recovery import digest, state_revision, validate_backup
 from mcp_sorter.releases import (
     activate_release,
     directory,
@@ -17,6 +19,7 @@ from mcp_sorter.releases import (
     serve_release,
     stage,
 )
+from mcp_sorter.runtime import Runtime
 from mcp_sorter.settings import Settings
 
 
@@ -149,3 +152,33 @@ def test_first_activation_works_before_state_exists(tmp_path, monkeypatch):
     result = activate_release(settings, record.sha256)
     assert result.active == record.sha256 and result.backup is None and result.previous is None
     assert not (settings.data_dir / "state.sqlite").exists()
+
+
+def test_release_selection_does_not_migrate_and_rollback_rejects_collection_history(
+    runtime, tmp_path, monkeypatch
+):
+    settings = runtime.settings
+    runtime.close()
+    with closing(sqlite3.connect(settings.data_dir / "state.sqlite")) as db, db:
+        db.execute("DROP TABLE collection_revisions")
+        db.execute("ALTER TABLE collections DROP COLUMN current_revision")
+        db.execute("ALTER TABLE collections DROP COLUMN deleted")
+        db.execute("UPDATE alembic_version SET version_num='0005'")
+    old = wheel(tmp_path, "0.1.1", revisions=["0005"])
+    fake_installer(monkeypatch, settings, old)
+    stage(settings, old, digest(old), tmp_path)
+    old_pointer = activate_release(settings, digest(old))
+    assert state_revision(settings.data_dir / "state.sqlite") == "0005"
+    assert (
+        validate_backup(settings.data_dir / "backups" / old_pointer.backup).state_revision == "0005"
+    )
+    candidate = wheel(tmp_path, "0.2.0", revisions=["0005", "0006"])
+    fake_installer(monkeypatch, settings, candidate)
+    stage(settings, candidate, digest(candidate), tmp_path)
+    new_pointer = activate_release(settings, digest(candidate))
+    upgraded = Runtime(settings)
+    upgraded.close()
+    with pytest.raises(ValueError, match="schema"):
+        rollback_release(settings)
+    assert pointer(settings) == new_pointer
+    assert state_revision(settings.data_dir / "state.sqlite") == "0006"

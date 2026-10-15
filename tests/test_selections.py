@@ -6,6 +6,7 @@ from typer.testing import CliRunner
 
 from mcp_sorter.api import create_app
 from mcp_sorter.cli import app
+from mcp_sorter.ranking import compare
 from mcp_sorter.runtime import Runtime
 from mcp_sorter.selections import (
     catalog_diff,
@@ -48,6 +49,27 @@ def test_selection_validation_and_checksum(runtime):
     bundle.selection.name = "Changed after export"
     with pytest.raises(ValueError, match="checksum"):
         import_selection(runtime, bundle)
+
+
+def test_comparisons_and_selections_use_indexed_pinned_lookups(runtime, monkeypatch):
+    ids = ["demo/slack", "demo/github"]
+    snapshot = runtime.catalog.active()
+    expected = runtime.catalog.records_by_ids(ids, snapshot)
+    new = runtime.catalog.publish([expected[0]], "2026-10-01T00:00:00Z")
+    runtime.catalog.activate(new)
+
+    def no_catalog_scan(*args, **kwargs):
+        raise AssertionError("Selection and comparison must not load the whole catalog")
+
+    monkeypatch.setattr(runtime.catalog, "records", no_catalog_scan)
+    assert compare(runtime.catalog, ids, snapshot) == expected
+    saved = save_selection(runtime, "Pinned", ids, snapshot)
+    assert saved.servers == expected and saved.snapshot == snapshot
+    with pytest.raises(ValueError, match="missing"):
+        compare(runtime.catalog, ids)
+    for invalid in [[], ids * 2, [f"id/{i}" for i in range(51)], ["' OR 1=1 --"]]:
+        with pytest.raises(ValueError):
+            runtime.catalog.records_by_ids(invalid, snapshot)
 
 
 def test_diff_detects_modified_and_deprecated_records(runtime):

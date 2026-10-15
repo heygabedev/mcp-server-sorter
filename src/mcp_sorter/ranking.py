@@ -79,6 +79,16 @@ def query_expression(query: str) -> str:
 
 
 def rank(catalog: Catalog, request: RankRequest) -> Ranking:
+    return retrieve(catalog, request)[0]
+
+
+def retrieve(
+    catalog: Catalog,
+    request: RankRequest,
+    *,
+    paginate: bool = False,
+    position: tuple[float, int, float, str] | None = None,
+) -> tuple[Ranking, int]:
     active_catalog, active_configuration = active_versions(catalog.engine)
     snapshot = request.snapshot or active_catalog
     configuration = request.configuration or active_configuration
@@ -106,12 +116,12 @@ def rank(catalog: Catalog, request: RankRequest) -> Ranking:
         if not request.filters.include_deprecated:
             conditions.append("json_extract(servers.payload,'$.status') != 'deprecated'")
         score = "0.0"
-        matches = "0,0,0"
+        matches = ",".join(f"0 AS matched_{field}" for field in SEARCH_FIELDS)
         source = "servers"
         if expression:
             score = "bm25(search,0,?,?,?)"
             matches = ",".join(
-                f"highlight(search,{index},'<','>') != search.{field}"
+                f"highlight(search,{index},'<','>') != search.{field} AS matched_{field}"
                 for index, field in enumerate(SEARCH_FIELDS, 1)
             )
             parameters = [
@@ -124,8 +134,33 @@ def rank(catalog: Catalog, request: RankRequest) -> Ranking:
             source = "search JOIN servers ON servers.id=search.id"
             conditions.insert(0, "search MATCH ?")
         where = " AND ".join(conditions) or "1"
+        total = 0
         if request.query.strip() and not expression:
             rows = []
+        elif paginate:
+            total = db.execute(
+                f"SELECT COUNT(*) FROM {source} WHERE {where}",
+                parameters[3:] if expression else parameters,
+            ).fetchone()[0]
+            continuation = ""
+            after: tuple[object, ...] = ()
+            if position is not None:
+                score_at, evidence_at, freshness_at, identifier = position
+                continuation = (
+                    "WHERE (score,-evidence_count,-freshness_used,server_id) > (?,?,?,?) "
+                )
+                after = (score_at, -evidence_at, -freshness_at, identifier)
+            rows = db.execute(
+                "WITH ranked AS MATERIALIZED ("
+                f"SELECT servers.payload AS payload, {score} AS score, {matches}, "
+                "json_array_length(json_extract(servers.payload,'$.evidence')) AS evidence_count, "
+                "freshness(json_extract(servers.payload,'$.updated_at')) AS freshness_used, "
+                f"servers.id AS server_id FROM {source} WHERE {where}) "
+                "SELECT payload,score,matched_name,matched_description,matched_tags FROM ranked "
+                + continuation
+                + "ORDER BY score,evidence_count DESC,freshness_used DESC,server_id LIMIT ?",
+                (*parameters, *after, request.limit + 1),
+            ).fetchall()
         else:
             rows = db.execute(
                 f"SELECT servers.payload, {score} AS score, {matches} FROM {source} WHERE {where} "
@@ -158,7 +193,7 @@ def rank(catalog: Catalog, request: RankRequest) -> Ranking:
         for payload, score, *flags in rows
         for server in [ServerRecord.model_validate_json(payload)]
     ]
-    return Ranking(
+    result = Ranking(
         snapshot=snapshot,
         configuration=configuration,
         as_of=as_of,
@@ -166,12 +201,10 @@ def rank(catalog: Catalog, request: RankRequest) -> Ranking:
         filters=request.filters,
         results=results,
     )
+    return result, total
 
 
 def compare(catalog: Catalog, ids: list[str], snapshot: str | None = None) -> list[ServerRecord]:
     if not 2 <= len(ids) <= 4 or len(set(ids)) != len(ids):
         raise ValueError("Choose between two and four distinct servers")
-    records = {server.id: server for server in catalog.records(snapshot)}
-    if any(identifier not in records for identifier in ids):
-        raise ValueError("A selected server is missing from this snapshot")
-    return [records[identifier] for identifier in ids]
+    return catalog.records_by_ids(ids, snapshot)

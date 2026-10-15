@@ -1,6 +1,26 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
+test('browses every deterministic page and resets pagination for a new query', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('.server-card')).toHaveCount(20);
+  const firstNames = await page.locator('.server-title').allTextContents();
+  const expected = await (
+    await page.request.post('/api/v1/catalog/search', { data: { limit: 50 } })
+  ).json();
+  await page.getByRole('button', { name: 'Load more', exact: true }).click();
+  await expect(page.locator('.server-card')).toHaveCount(expected.total);
+  const names = await page.locator('.server-title').allTextContents();
+  expect(names.slice(0, 20)).toEqual(firstNames);
+  expect(new Set(names).size).toBe(names.length);
+  await expect(page.getByRole('button', { name: 'Load more', exact: true })).toHaveCount(0);
+  await page.getByLabel('Search servers').fill('github');
+  await page.getByRole('button', { name: 'Find servers' }).click();
+  await expect(page.locator('.server-card')).toHaveCount(1);
+  await expect(page.getByText('Showing 1 of 1 matching servers.')).toBeVisible();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+
 test('runs challenge cases with integrity checks separate from ranking quality', async ({
   page,
 }) => {
@@ -32,6 +52,7 @@ test('search, compare, save, export and evaluate without external requests', asy
   await page.goto('/');
   await expect(page.getByRole('button', { name: 'GitHub', exact: true })).toBeVisible();
   await page.getByLabel('Select GitHub').check();
+  await page.getByRole('button', { name: 'Load more', exact: true }).click();
   await page.getByLabel('Select Slack').check();
   await page.getByRole('button', { name: 'Compare & save' }).click();
   await expect(
@@ -140,14 +161,14 @@ test('category and deployment filters reach the API and narrow the visible resul
   await page.getByRole('combobox', { name: 'Category', exact: true }).selectOption('database');
   await page.getByRole('combobox', { name: 'Deployment', exact: true }).selectOption('local');
   const submitted = page.waitForRequest(
-    (request) => request.url().endsWith('/api/v1/rankings') && request.method() === 'POST',
+    (request) => request.url().endsWith('/api/v1/catalog/search') && request.method() === 'POST',
   );
   await page.getByRole('button', { name: 'Apply filters' }).click();
   expect((await submitted).postDataJSON()).toEqual({
     query: 'sqlite postgres files',
-    filters: { category: 'database', deployment: 'local' },
+    filters: { category: 'database', deployment: 'local', include_deprecated: false },
     profile: 'baseline',
-    limit: 50,
+    limit: 20,
   });
   await expect(page.locator('.server-card')).toHaveCount(1);
   await expect(page.getByRole('button', { name: 'SQLite', exact: true })).toBeVisible();

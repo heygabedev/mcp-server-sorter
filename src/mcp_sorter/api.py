@@ -30,6 +30,7 @@ from mcp_sorter.operations import router as operations_router
 from mcp_sorter.ranking import Profile, Ranking, RankRequest, compare, rank
 from mcp_sorter.recovery import backup, service_lock, validate_backup
 from mcp_sorter.runtime import Runtime
+from mcp_sorter.search import CatalogPage, CatalogSearch, search_catalog
 from mcp_sorter.selections import (
     Selection,
     SelectionExport,
@@ -153,6 +154,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def rankings(request: RankRequest) -> Ranking:
         try:
             return rank_with_profile(application.state.runtime, request)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+
+    @application.post("/api/v1/catalog/search", response_model=CatalogPage)
+    def catalog_search(request: CatalogSearch) -> CatalogPage:
+        try:
+            return search_catalog(application.state.runtime.catalog, request)
         except ValueError as exc:
             raise HTTPException(422, str(exc)) from exc
 
